@@ -1,0 +1,11 @@
+{
+    "files.associations": {
+        "*.yo": "y86",
+        "unp.h": "c",
+        "errno.h": "c",
+        "in.h": "c",
+        "stdio.h": "c",
+        "string.h": "c",
+        "zconf.h": "c"
+    }
+}
