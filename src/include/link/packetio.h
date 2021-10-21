@@ -6,6 +6,11 @@
 #define PACKETIO_H
 
 #include <netinet/ether.h>
+
+#define MAX_ETH_PACKET_SIZE     2048
+#define MAX_PAYLOAD_SIZE        1500
+#define MIN_PAYLOAD_SIZE        46
+
 /**
 * @brief Encapsulate some data into an Ethernet II frame and send it.
 *

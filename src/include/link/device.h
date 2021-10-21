@@ -11,6 +11,8 @@
 #define MAX_DEVICE_NAME_LENGTH  256
 #define MAX_DEVICE              256
 
+extern pcap_t *device_handles[MAX_DEVICE];
+
 /**
 * Init pcap devices.
 *

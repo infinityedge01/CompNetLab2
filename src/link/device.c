@@ -2,7 +2,6 @@
 
 #include <pcap/pcap.h>
 #include <string.h>
-#include <malloc.h>
 
 char pcap_errbuf[PCAP_ERRBUF_SIZE];
 pcap_if_t *pcap_devices;
@@ -16,8 +15,10 @@ int initDevice(){
         #ifdef DEBUG
         fprintf(stderr, "Error at pcap_findalldevs() in initDevice(): %s\n", pcap_errbuf);
         #endif
+        return ret;
     }
-    return ret;
+    cntdev = 0;
+    return 0;
 }
 
 int addDevice(const char * device){
@@ -32,38 +33,10 @@ int addDevice(const char * device){
             break;
         }
     }
-    pcap_t *handle = pcap_create(device, pcap_errbuf);
+    pcap_t *handle = pcap_open_live(device, 65536, 0, 1000, pcap_errbuf);
     if(handle == NULL){
         #ifdef DEBUG
-        fprintf(stderr, "Error at pcap_creates() in addDevice(): %s\n", pcap_errbuf);
-        #endif
-        return -1;
-    }
-    int ret = pcap_set_snaplen(handle, 1518);
-    if(ret != 0){
-        #ifdef DEBUG
-        fprintf(stderr, "Error at pcap_set_snaplen() in addDevice()\n");
-        #endif
-        return -1;
-    }
-    ret = pcap_setnonblock(handle, 1, pcap_errbuf);
-    if(ret != 0){
-        #ifdef DEBUG
-        fprintf(stderr, "Error at pcap_setnonblock() in addDevice(): %s\n", pcap_errbuf);
-        #endif
-        return -1;
-    }
-    ret = pcap_set_immediate_mode(handle, 1);
-    if(ret != 0){
-        #ifdef DEBUG
-        fprintf(stderr, "Error at pcap_set_immediate_mode in addDevice()\n");
-        #endif
-        return -1;
-    }
-    ret = pcap_activate(handle);
-    if(ret != 0){
-        #ifdef DEBUG
-        fprintf(stderr, "Error at pcap_activate() in addDevice()\n");
+        fprintf(stderr, "Error at pcap_open_live() in addDevice(): %s\n", pcap_errbuf);
         #endif
         return -1;
     }
@@ -76,7 +49,7 @@ int findDevice(const char * device){
     if(len == 0 || len >= MAX_DEVICE_NAME_LENGTH){
         return -1;
     }
-    for (int i = 0; i < cntdev; i ++) {
+    for (int i = 0; i < cntdev; i ++) { 
         if(strlen(devices[cntdev]->name) != len) continue;
         if(strcmp(device, devices[cntdev]->name) == 0) {
             return i;
