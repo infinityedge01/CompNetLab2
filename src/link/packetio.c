@@ -53,19 +53,25 @@ int setFrameReceiveCallback(frameReceiveCallback callback){
     return 0;
 }
 
+int init_mutex(void){
+    pthread_mutex_init(&sendpacket_mutex, NULL);
+    pthread_mutex_init(&callback_mutex, NULL);
+    return 0;
+}
+
 int start_capture(int id){
     struct pcap_pkthdr *hdr;
-    uchar *packet;
+    uchar packet[MAX_ETH_PACKET_SIZE];
     while(1){
         int ret = pcap_next_ex(device_handles[id], &hdr,(const uchar **)&packet);
         if(ret == 0){
             #ifdef DEBUG
-            fprintf(stderr, "Packet Timeout in device %s\n", device[id]->name);
+            fprintf(stderr, "Packet Timeout in device %s\n", devices[id]->name);
             #endif
         }
         if(ret < 0){
             #ifdef DEBUG
-            fprintf(stderr, "Packet Error in device %s\n", device[id]->name);
+            fprintf(stderr, "Packet Error in device %s\n", devices[id]->name);
             #endif
             return -1;
         }	
@@ -74,11 +80,16 @@ int start_capture(int id){
             int callback_ret = registered_callback(packet, hdr->caplen, id);
             if(callback_ret < 0){
                 #ifdef DEBUG
-                fprintf(stderr, "Callback Error in device %s\n", device[id]->name);
+                fprintf(stderr, "Callback Error in device %s\n", devices[id]->name);
                 #endif
             }
             pthread_mutex_unlock(&callback_mutex);
         }
     }
     return 0;
+}
+
+void * start_capture_pthread(void *arg){
+    int id = (int)(long)arg;
+    start_capture(id);
 }

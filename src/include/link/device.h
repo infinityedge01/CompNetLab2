@@ -12,7 +12,7 @@
 #define MAX_DEVICE              256
 
 extern pcap_t *device_handles[MAX_DEVICE];
-
+extern pcap_if_t *devices[MAX_DEVICE];
 /**
 * Init pcap devices.
 *

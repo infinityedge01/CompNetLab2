@@ -1,12 +1,15 @@
 #include <link/device.h>
-
+#include <link/packetio.h>
 #include <pcap/pcap.h>
+#include <pthread.h>
 #include <string.h>
 
 char pcap_errbuf[PCAP_ERRBUF_SIZE];
 pcap_if_t *pcap_devices;
 pcap_if_t *devices[MAX_DEVICE];
 pcap_t *device_handles[MAX_DEVICE];
+pthread_t device_pthreads[MAX_DEVICE];
+
 int cntdev;
 
 int initDevice(){
@@ -14,6 +17,18 @@ int initDevice(){
     if(ret != 0){
         #ifdef DEBUG
         fprintf(stderr, "Error at pcap_findalldevs() in initDevice(): %s\n", pcap_errbuf);
+        #endif
+        return ret;
+    }
+    #ifdef DEBUG
+    for (pcap_if_t *p = pcap_devices; p; p = p->next) {
+        printf("Device name: %s\n", p->name);
+    }
+    #endif
+    ret = init_mutex();
+    if(ret != 0){
+        #ifdef DEBUG
+        fprintf(stderr, "Error at init_mutex() in initDevice(): %s\n", pcap_errbuf);
         #endif
         return ret;
     }
@@ -41,6 +56,7 @@ int addDevice(const char * device){
         return -1;
     }
     device_handles[cntdev] = handle;
+    pthread_create(&device_pthreads[cntdev], NULL, &start_capture_pthread, (void *)(long)cntdev);
     return cntdev++;
 }
 

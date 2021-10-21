@@ -45,4 +45,27 @@ typedef int (*frameReceiveCallback)(const void *, int, int);
 */
 int setFrameReceiveCallback(frameReceiveCallback callback);
 
+/**
+* @brief Init the mutexes.
+*
+* @return 0 on success, -1 on error.
+*/
+int init_mutex(void);
+
+/**
+* @brief Start capture a device.
+*
+* @param id the id of the device.
+* @return 0 on success, -1 on error.
+*/
+int start_capture(int id);
+
+/**
+* @brief start_capture for pthread use.
+*
+* @param id the id of the device.
+* @see start_capture
+*/
+void * start_capture_pthread(void *arg);
+
 #endif
