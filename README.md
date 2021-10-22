@@ -46,7 +46,7 @@ I used `examples/example.txt` to build the vNet. I ran `./eth_reciever` on `ns2`
 
 Here is the screenshots. They show that my implementation can detect network interfaces on the host.
 
-You should use command `make debug` to build the libraries to show the device name in `initDevice()`.
+You should use command `make debug` to build the libraries to show the device name in `initDevice()`, and modify the mac address in `eth_sender.c` to the MAC address of `veth2-1`.
 
 ![image-20211022212855411](checkpoints/CP01/screenshot.png)
 
