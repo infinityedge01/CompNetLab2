@@ -54,7 +54,9 @@ You should use command `make debug` to build the libraries to show the device na
 
 I used `examples/example.txt` to build the vNet. I ran `./eth_reciever` on `ns2` and ran `./eth_sender` on `ns1`.
 
-Here is the screenshots.
+Here is the screenshots. 
+
+Traces are dumped in `checkpoints/CP02`.
 
 ![image-20211022212855411](checkpoints/CP02/screenshot.png)
 
