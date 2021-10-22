@@ -48,7 +48,7 @@ Here is the screenshots. They show that my implementation can detect network int
 
 You should use command `make debug` to build the libraries to show the device name in `initDevice()`.
 
-![image-20211022212855411](checkpoints\CP01\screenshot.png)
+![image-20211022212855411](checkpoints/CP01/screenshot.png)
 
 ### Checkpoint 2 (CP2).
 
@@ -56,5 +56,5 @@ I used `examples/example.txt` to build the vNet. I ran `./eth_reciever` on `ns2`
 
 Here is the screenshots.
 
-![image-20211022212855411](checkpoints\CP02\screenshot.png)
+![image-20211022212855411](checkpoints/CP02/screenshot.png)
 
