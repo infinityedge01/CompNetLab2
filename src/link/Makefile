@@ -4,7 +4,7 @@ CFLAGS 	+= $(DEBUG)
 LDFLAGS := -lpcap -lpthread
 INCLUDE := -I ../include
 
-OBJS = device.o packetio.o
+OBJS = device.o packetio.o util.o
 all:$(OBJS)
 $(OBJS):%.o:%.c
 	$(CC) -c $(CFLAGS) $< -o $@ ${LDFLAGS} ${INCLUDE}

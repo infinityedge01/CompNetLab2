@@ -1,6 +1,6 @@
 #include <link/packetio.h>
 #include <link/device.h>
-
+#include <link/util.h>
 #include <pcap/pcap.h>
 #include <semaphore.h>
 #include <pthread.h>
@@ -27,12 +27,18 @@ int ethtype, const void * destmac, int id){
     void* checksum = (void*)(framebuf + sizeof(struct ethhdr) + len);
     
     memcpy(&hdr->h_dest, destmac, ETH_ALEN);
-    memset(&hdr->h_source, 0, ETH_ALEN);
+    int ret = get_mac_addr(devices[id], (void *)&hdr->h_source);
+    if(ret < 0){
+        #ifdef DEBUG
+        fprintf(stderr, "Error at sendFrame(): Cannot get source MAC address.\n");
+        #endif
+        memset(&hdr->h_source, 0, ETH_ALEN);
+    }
     hdr->h_proto = htons(ethtype); // convert to network endian
     memcpy(data, buf, len);
     memset(checksum, 0, 4); // leave CRC zero
     pthread_mutex_lock(&sendpacket_mutex);
-    int ret = pcap_sendpacket(device_handles[id], framebuf, frame_len);
+    ret = pcap_sendpacket(device_handles[id], framebuf, frame_len);
     if (ret != 0){
         pthread_mutex_unlock(&sendpacket_mutex);
         #ifdef DEBUG
@@ -61,7 +67,7 @@ int init_mutex(void){
 
 int start_capture(int id){
     struct pcap_pkthdr *hdr;
-    uchar packet[MAX_ETH_PACKET_SIZE];
+    uchar *packet;
     while(1){
         int ret = pcap_next_ex(device_handles[id], &hdr,(const uchar **)&packet);
         if(ret == 0){
