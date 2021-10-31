@@ -1,5 +1,5 @@
 /**
-* @file packetio.h
+* @file util.h
 * @brief Library supporting parsing Ethernet II frames.
 */
 #ifndef LINK_UTIL_H

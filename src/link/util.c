@@ -8,11 +8,12 @@
 int get_mac_addr(pcap_if_t *device, void *result){
     if(!device) return -1;
     if(!device->addresses) return -1;
-    if(!device->addresses->addr) return -1;
-    if(!device->addresses->addr->sa_data) return -1;
-    void* p = ((void *)device->addresses->addr->sa_data) + 10;
-    memcpy(result, (const void *)p, ETH_ALEN);
-    return 0;
+    for (pcap_addr_t *p=device->addresses; p; p=p->next) {
+        if (p->addr->sa_family != AF_PACKET)  continue;
+        memcpy(result, (const void *)(p->addr->sa_data+10), ETH_ALEN);
+        return 0;
+    }
+    return -1;
 }
 
 int get_src_addr(const void *frame, void *result){
