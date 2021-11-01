@@ -37,3 +37,14 @@ int print_mac_address(const void *addr){
     printf("%02x:%02x:%02x:%02x:%02x:%02x", *ptr, *(ptr+1), *(ptr+2), *(ptr+3), *(ptr+4), *(ptr+5));
     return 0;
 }
+
+int compare_mac_address(const void *addr1, const void *addr2){
+    unsigned char* ptr1 = (unsigned char*)addr1;
+    unsigned char* ptr2 = (unsigned char*)addr2;
+    for(int i = 0; i < ETH_ALEN; i ++){
+        if(*ptr1 != *ptr2) return 1;
+        ptr1++;
+        ptr2++;
+    }
+    return 0;
+}

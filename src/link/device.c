@@ -1,5 +1,6 @@
 #include <link/device.h>
 #include <link/packetio.h>
+#include <link/util.h>
 #include <pcap/pcap.h>
 #include <pthread.h>
 #include <string.h>
@@ -9,7 +10,7 @@ pcap_if_t *pcap_devices;
 pcap_if_t *devices[MAX_DEVICE];
 pcap_t *device_handles[MAX_DEVICE];
 pthread_t device_pthreads[MAX_DEVICE];
-
+unsigned char device_mac_addr[MAX_DEVICE][6];
 int cntdev;
 
 int initDevice(){
@@ -47,6 +48,13 @@ int addDevice(const char * device){
             devices[cntdev] = p;
             break;
         }
+    }
+    int ret = get_mac_addr(devices[cntdev], (void *)device_mac_addr[cntdev]);
+    if(ret != 0) {
+        #ifdef DEBUG
+        fprintf(stderr, "Error at get_mac_addr() in addDevice()\n");
+        #endif
+        return -1;
     }
     pcap_t *handle = pcap_open_live(device, 65536, 0, 1000, pcap_errbuf);
     if(handle == NULL){

@@ -4,7 +4,7 @@ LDFLAGS := -lpcap -lpthread
 INCLUDE := -I ../include
 
 files := $(shell find ../ -name "*.o")
-OBJS = eth_sender eth_receiver
+OBJS = arp_sender arp_receiver
 all:$(OBJS)
 $(OBJS):% :%.c
 	$(CC) $(CFLAGS) $< $(files) -o $@ ${LDFLAGS} ${INCLUDE}

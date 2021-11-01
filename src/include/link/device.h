@@ -11,8 +11,10 @@
 #define MAX_DEVICE_NAME_LENGTH  256
 #define MAX_DEVICE              256
 
+extern pcap_if_t *pcap_devices;
 extern pcap_t *device_handles[MAX_DEVICE];
 extern pcap_if_t *devices[MAX_DEVICE];
+extern unsigned char device_mac_addr[MAX_DEVICE][6];
 /**
 * Init pcap devices.
 *

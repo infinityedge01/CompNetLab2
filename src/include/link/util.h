@@ -53,4 +53,13 @@ int get_payload(const void* frame, int len, void* result);
 */
 int print_mac_address(const void *addr);
 
+/**
+* @brief Compare MAC address
+*
+* @param addr1 Pointer to the MAC address.
+* @param addr2 Pointer to the MAC address.
+* @return 0 on same, 1 on different.
+*/
+int compare_mac_address(const void *addr1, const void *addr2);
+
 #endif

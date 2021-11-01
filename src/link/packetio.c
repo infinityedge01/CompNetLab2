@@ -27,18 +27,44 @@ int ethtype, const void * destmac, int id){
     void* checksum = (void*)(framebuf + sizeof(struct ethhdr) + len);
     
     memcpy(&hdr->h_dest, destmac, ETH_ALEN);
-    int ret = get_mac_addr(devices[id], (void *)&hdr->h_source);
-    if(ret < 0){
-        #ifdef DEBUG
-        fprintf(stderr, "Error at sendFrame(): Cannot get source MAC address.\n");
-        #endif
-        memset(&hdr->h_source, 0, ETH_ALEN);
-    }
+    memcpy(&hdr->h_source, device_mac_addr[id], ETH_ALEN);
     hdr->h_proto = htons(ethtype); // convert to network endian
     memcpy(data, buf, len);
     memset(checksum, 0, 4); // leave CRC zero
     pthread_mutex_lock(&sendpacket_mutex);
-    ret = pcap_sendpacket(device_handles[id], framebuf, frame_len);
+    int ret = pcap_sendpacket(device_handles[id], framebuf, frame_len);
+    if (ret != 0){
+        pthread_mutex_unlock(&sendpacket_mutex);
+        #ifdef DEBUG
+        fprintf(stderr, "Error at pcap_inject() in sendFrame()\n");
+        #endif
+        return -1;
+    }
+    pthread_mutex_unlock(&sendpacket_mutex);
+    return 0;
+}
+
+int sendBroadcastFrame(const void * buf, int len,
+int ethtype, int id){
+    if(len > MAX_PAYLOAD_SIZE){
+        #ifdef DEBUG
+        fprintf(stderr, "Error at sendFrame(): Payload too large\n");
+        #endif
+        return -1;
+    }
+    size_t frame_len = sizeof(struct ethhdr) + len + 4;
+    char* framebuf = (char*)malloc(frame_len);
+    struct ethhdr *hdr = (struct ethhdr *)framebuf;
+    void* data = (void*)(framebuf + sizeof(struct ethhdr));
+    void* checksum = (void*)(framebuf + sizeof(struct ethhdr) + len);
+
+    memset(&hdr->h_dest, 0xff, ETH_ALEN);
+    memcpy(&hdr->h_source, device_mac_addr[id], ETH_ALEN);
+    hdr->h_proto = htons(ethtype); // convert to network endian
+    memcpy(data, buf, len);
+    memset(checksum, 0, 4); // leave CRC zero
+    pthread_mutex_lock(&sendpacket_mutex);
+    int ret = pcap_sendpacket(device_handles[id], framebuf, frame_len);
     if (ret != 0){
         pthread_mutex_unlock(&sendpacket_mutex);
         #ifdef DEBUG
@@ -82,7 +108,7 @@ int start_capture(int id){
             return -1;
         }
         struct ethhdr *ehdr = (struct ethhdr *)packet;
-        uint16_t protocol = ehdr->h_proto;
+        uint16_t protocol = htons(ehdr->h_proto);
         if(registered_callback[protocol] != NULL){
             pthread_mutex_lock(&callback_mutex);
             int callback_ret = registered_callback[protocol](packet, hdr->caplen, id);

@@ -25,6 +25,18 @@
 int sendFrame(const void * buf, int len,
 int ethtype, const void * destmac, int id);
 /**
+* @brief Encapsulate some data into an Ethernet II frame and broadcast it.
+*
+* @param buf Pointer to the payload.
+* @param len Length of the payload.
+* @param ethtype EtherType field value of this frame.
+* @param id ID of the device(returned by `addDevice`) to send on.
+* @return 0 on success, -1 on error.
+* @see addDevice
+*/
+int sendBroadcastFrame(const void * buf, int len,
+int ethtype, int id);
+/**
 * @brief Process a frame upon receiving it.
 *
 * @param buf Pointer to the frame.
