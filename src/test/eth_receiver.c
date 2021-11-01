@@ -26,7 +26,7 @@ int main(int argc, char **argv){
     initDevice();
     char device_name[] = "veth2-1";
     device_id = addDevice((const char *)device_name);
-    int ret = setFrameReceiveCallback(eth_callback);
+    int ret = setFrameReceiveCallback(eth_callback, 0x0000);
     while(1){
         sleep(1);
     }

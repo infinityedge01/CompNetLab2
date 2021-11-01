@@ -23,7 +23,7 @@ int main(int argc, char **argv){
     initDevice();
     char device_name[] = "veth1-2";
     int id = addDevice((const char *)device_name);
-    int ret = setFrameReceiveCallback(eth_callback);
+    int ret = setFrameReceiveCallback(eth_callback, 0x0000);
     char data[] = "Hello, I'm Diana!";
     char mac[] = {0x4a, 0x11, 0x3e, 0xc7, 0x40, 0x3f};
     while(1){

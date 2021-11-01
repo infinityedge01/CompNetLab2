@@ -50,11 +50,11 @@ int ethtype, const void * destmac, int id){
     return 0;
 }
 
-frameReceiveCallback registered_callback = NULL;
+frameReceiveCallback registered_callback[65536];
 
-int setFrameReceiveCallback(frameReceiveCallback callback){
+int setFrameReceiveCallback(frameReceiveCallback callback, uint16_t protocol){
     pthread_mutex_lock(&callback_mutex);
-    registered_callback = callback;
+    registered_callback[protocol] = callback;
     pthread_mutex_unlock(&callback_mutex);
     return 0;
 }
@@ -80,10 +80,12 @@ int start_capture(int id){
             fprintf(stderr, "Packet Error in device %s\n", devices[id]->name);
             #endif
             return -1;
-        }	
-        if(registered_callback != NULL){
+        }
+        struct ethhdr *ehdr = (struct ethhdr *)packet;
+        uint16_t protocol = ehdr->h_proto;
+        if(registered_callback[protocol] != NULL){
             pthread_mutex_lock(&callback_mutex);
-            int callback_ret = registered_callback(packet, hdr->caplen, id);
+            int callback_ret = registered_callback[protocol](packet, hdr->caplen, id);
             if(callback_ret < 0){
                 #ifdef DEBUG
                 fprintf(stderr, "Callback Error in device %s\n", devices[id]->name);

@@ -43,7 +43,7 @@ typedef int (*frameReceiveCallback)(const void *, int, int);
 * @return 0 on success, -1 on error.
 * @see frameReceiveCallback
 */
-int setFrameReceiveCallback(frameReceiveCallback callback);
+int setFrameReceiveCallback(frameReceiveCallback callback, uint16_t protocol);
 
 /**
 * @brief Init the mutexes.
