@@ -15,6 +15,7 @@ extern pcap_if_t *pcap_devices;
 extern pcap_t *device_handles[MAX_DEVICE];
 extern pcap_if_t *devices[MAX_DEVICE];
 extern unsigned char device_mac_addr[MAX_DEVICE][6];
+extern int cntdev;
 /**
 * Init pcap devices.
 *

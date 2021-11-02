@@ -6,7 +6,7 @@
 #define NETWORK_DEVICE_H
 #include <link/device.h>
 extern uint32_t device_ip_addr[MAX_DEVICE];
-
+extern uint32_t device_ip_mask_addr[MAX_DEVICE];
 /**
 * Get device ip address.
 *

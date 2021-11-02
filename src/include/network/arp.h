@@ -8,7 +8,7 @@
 #include <netinet/ip.h>
 
 #define ARP_TIMEOUT_MS 2000
-#define MAX_ARP_RECORD 256
+#define MAX_ARP_RECORD 64
 
 struct arp_header{
     uint16_t hardware_type; // 0x0001

@@ -10,7 +10,7 @@
 typedef unsigned char uchar;
 
 pthread_mutex_t sendpacket_mutex, callback_mutex;
-
+const unsigned char broadcast_address[6] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 
 int sendFrame(const void * buf, int len,
 int ethtype, const void * destmac, int id){
@@ -108,6 +108,7 @@ int start_capture(int id){
             return -1;
         }
         struct ethhdr *ehdr = (struct ethhdr *)packet;
+        if(compare_mac_address(ehdr->h_dest, device_mac_addr[id]) && compare_mac_address(ehdr->h_dest, broadcast_address)) continue;
         uint16_t protocol = htons(ehdr->h_proto);
         if(registered_callback[protocol] != NULL){
             pthread_mutex_lock(&callback_mutex);

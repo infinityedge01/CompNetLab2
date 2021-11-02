@@ -20,6 +20,15 @@
 int get_ip_addr(pcap_if_t *device, void *result);
 
 /**
+* @brief Get IP mask address of a device.
+*
+* @param device Pointer to the device.
+* @param result The address to save the parse result.
+* @return 0 on success, -1 on error.
+*/
+int get_ip_mask_addr(pcap_if_t *device, void *result);
+
+/**
 * @brief Get source address of an IP packet.
 *
 * @param packet Pointer to the packet.
