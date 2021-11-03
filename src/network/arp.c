@@ -4,12 +4,15 @@
 #include <network/arp.h>
 #include <network/util.h>
 
+#include <pthread.h>
 #include <arpa/inet.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <time.h>
 
 struct arp_record arprecord[256];
+pthread_t arp_pthread;
 
 uint64_t gettime_ms() {
     struct timespec t;
@@ -117,10 +120,22 @@ int arp_frame_handler(const void* buf, int len, int id) {
     return 0;
 }
 
+void arp_routine(){
+    while(1){
+        sleep(5);
+        for(int i = 0; i < cntdev; i ++){
+            send_arp_broadcast(&device_ip_addr[i], i);
+        }
+    }
+}
+
+void * arp_routine_pthread(void *arg){
+    arp_routine();
+}
+
 int arp_init() {
     setFrameReceiveCallback(arp_frame_handler, ETH_P_ARP);
-
-    // set function in event loop
+    pthread_create(&arp_pthread, NULL, &arp_routine_pthread, NULL);
     return 0;
 }
 

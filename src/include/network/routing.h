@@ -33,7 +33,7 @@ struct routing_record{
     struct routing_header header;
     struct routing_entry *entry;
 };
-
+int user_add_routing_entry(uint32_t ip_addr, uint32_t ip_mask, const void *nextHopMAC, int device_id);
 int route_init();
 int routing_query(uint32_t ip_addr, void* dest_mac_addr, int* device_id);
 void print_routing_table();

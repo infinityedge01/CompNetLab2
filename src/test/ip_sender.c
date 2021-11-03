@@ -43,8 +43,13 @@ int main(int argc, char **argv){
     route_init();
     IP_init();
     setIPPacketReceiveCallback(IPCallback);
+    struct in_addr src, dst;
+    inet_pton(AF_INET, "10.100.1.1", &src.s_addr);
+    inet_pton(AF_INET, "10.100.3.2", &dst.s_addr);
+    char send_data[] = "Good night. And see you tomorrow, Miss Diana.";
     while(1){
-        sleep(1000);
+        sleep(1);
+        sendIPPacket(src, dst, 192, send_data, strlen(send_data));
     }
     return 0;
 }

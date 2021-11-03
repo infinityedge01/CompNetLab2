@@ -11,6 +11,8 @@
 #define MAX_PAYLOAD_SIZE        1500
 #define MIN_PAYLOAD_SIZE        46
 
+extern unsigned char broadcast_address[6];
+
 /**
 * @brief Encapsulate some data into an Ethernet II frame and send it.
 *

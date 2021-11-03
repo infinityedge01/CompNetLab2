@@ -8,9 +8,9 @@
 #include <malloc.h>
 
 typedef unsigned char uchar;
-
+unsigned char broadcast_address[6] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 pthread_mutex_t sendpacket_mutex, callback_mutex;
-const unsigned char broadcast_address[6] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
+
 
 int sendFrame(const void * buf, int len,
 int ethtype, const void * destmac, int id){

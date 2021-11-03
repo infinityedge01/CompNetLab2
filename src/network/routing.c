@@ -217,7 +217,7 @@ void routing_routine(){
         for(int i = 0; i < cntdev; i ++){
             send_route_request(i);
         }
-        sleep(4);
+        sleep(9);
         update_routing_table();
         routing_request_id ++;
     }
@@ -256,7 +256,7 @@ int routing_query(uint32_t ip_addr, void* dest_mac_addr, int* device_id){
     }
     pthread_mutex_unlock(&routing_reader_mutex);
     for(int i = 0; i < routing_entry_count; i ++){
-        if(ip_addr & routing_entries[i].ip_mask == routing_entries[i].ip_addr){
+        if((ip_addr & routing_entries[i].ip_mask) == routing_entries[i].ip_addr){
             if(entry_id == -1 || routing_entries[i].ip_mask > max_mask){
                 entry_id = i;
                 max_mask = routing_entries[i].ip_mask;

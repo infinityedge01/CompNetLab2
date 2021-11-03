@@ -55,7 +55,12 @@ int get_ip_dst_addr(const void *packet, void *result);
 * @return length of payload on success, -1 on error.
 */
 int get_ip_payload(const void* packet, int len, void* result);
-
+/**
+* @brief Get checksum.
+*
+* @return length of payload on success, -1 on error.
+*/
+uint16_t checksum(uint16_t *addr, size_t len);
 /**
 * @brief Print IP address
 *

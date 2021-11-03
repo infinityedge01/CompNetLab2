@@ -6,6 +6,8 @@ in an Ethernet II frame.
 #ifndef NETWORK_IP_H
 #define NETWORK_IP_H
 #include <netinet/ip.h>
+
+int IP_init();
 /**
 * @brief Send an IP packet to specified host.
 *

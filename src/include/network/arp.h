@@ -7,7 +7,7 @@
 #include <netinet/ether.h>
 #include <netinet/ip.h>
 
-#define ARP_TIMEOUT_MS 2000
+#define ARP_TIMEOUT_MS 6000
 #define MAX_ARP_RECORD 64
 
 struct arp_header{
