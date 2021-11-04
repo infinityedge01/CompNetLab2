@@ -27,9 +27,10 @@ pthread_t routing_pthread;
 int routing_reader_cnt;
 
 int init_routing_entry(){
+    user_routing_entry_count = 0;
     routing_entry_count = cntdev;
-    routing_entries = malloc(routing_record_count * sizeof(struct routing_entry));
-    for(int i = 0; i < routing_record_count; i ++){
+    routing_entries = malloc(routing_entry_count * sizeof(struct routing_entry));
+    for(int i = 0; i < routing_entry_count; i ++){
         routing_entries[i].device_id = i;
         memset(routing_entries[i].dest_mac_addr, 0xff, ETH_ALEN);
         routing_entries[i].ip_addr = device_ip_addr[i] & device_ip_mask_addr[i];
@@ -101,7 +102,6 @@ void update_routing_table(){
     }
     int cur_record_cnt = cntdev + user_routing_entry_count;
     pthread_mutex_unlock(&user_routing_entry_mutex);
-    printf("%d\n", routing_record_count);
     for(int i = 0; i < routing_record_count; i ++){
         struct routing_entry *record_entries = record[i].entry;
         int devid = -1;
@@ -112,7 +112,6 @@ void update_routing_table(){
             }
         }
         if(devid == -1) continue;
-        printf("%d %d\n", i, record[i].header.routing_entry_count);
         for(int j = 0; j < record[i].header.routing_entry_count; j ++){
             if(!compare_mac_address(record_entries[j].dest_mac_addr, record[i].header.dest_mac_addr)) continue;
             if(record_entries[j].distance + 1 >= ROUTING_DISTANCE_INFINITY) continue;

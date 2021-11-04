@@ -14,19 +14,22 @@
 uint16_t cur_packet_id = 0;
 
 IPPacketReceiveCallback ip_callback;
-pthread_mutex_t ip_callback_mutex;
+pthread_mutex_t ip_callback_mutex, cur_packet_id_mutex;
 
 int IPEthCallback(const void* buf, int len, int id);
-
+ 
 int IP_init(){
     ip_callback = NULL;
     pthread_mutex_init(&ip_callback_mutex, NULL);
+    pthread_mutex_init(&cur_packet_id_mutex, NULL);
+    
     setFrameReceiveCallback(IPEthCallback, ETH_P_IP);
     return 0;
 }
 
 int sendIPPacket(const struct in_addr src, const struct in_addr dest,
 int proto, const void *buf, int len){
+    
     size_t send_len = sizeof(struct iphdr) + len;
     unsigned char *send_buf = malloc(send_len);
     struct iphdr *hdr = (struct iphdr *)send_buf;
@@ -35,7 +38,10 @@ int proto, const void *buf, int len){
     hdr->version = 4;
     hdr->tos = 0;
     hdr->tot_len = htons(send_len);
-    hdr->id = cur_packet_id;
+    pthread_mutex_lock(&cur_packet_id_mutex);
+    cur_packet_id ++;
+    hdr->id = htons(cur_packet_id);
+    pthread_mutex_unlock(&cur_packet_id_mutex);
     hdr->frag_off = 0;
     hdr->ttl = 64;
     hdr->protocol = proto;
