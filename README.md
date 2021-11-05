@@ -118,7 +118,7 @@ I used `examples/example.txt` to build the vNet.The network has the following to
 
 ![image-20211022212855411](checkpoints/CP04/exp.png)
 
-`veth1-2, veth2-1` has ip address `10.100.1.0/24`, `veth2-3, veth3-2` has ip address `10.100.2.0/24`, `veth3-4, veth4-3` has ip address `10.100.3.0/24`, `veth4` has ip address `10.100.4.0/24`, 
+`veth1-2, veth2-1` has ip address `10.100.1.0/24`, `veth2-3, veth3-2` has ip address `10.100.2.0/24`, `veth3-4, veth4-3` has ip address `10.100.3.0/24`, `veth3-0` has ip address `10.100.4.0/24`, 
  I ran `./router` on `ns1, ns2, ns3, ns4`, after some routing updating routine, the routing table in `ns1` is as following:
 
 ```
@@ -193,3 +193,528 @@ Dst Mac Addr: 32:13:7e:e6:76:eb
 Distance: 2
 Device ID: 0
 ```
+
+### Checkpoint 5 (CP5).
+
+I used `checkpoint/CP05/vnet.txt` to build the vNet.The network has the following topology:
+
+```
+ns1 --- ns2 --- ns3 --- ns4
+        |       |
+        ns5 --- ns6
+```
+
+`veth1-2, veth2-1` has ip address `10.100.1.0/24`, `veth2-3, veth3-2` has ip address `10.100.2.0/24`, `veth3-4, veth4-3` has ip address `10.100.3.0/24`, `veth2-5, veth5-2` has ip address `10.100.4.0/24`, `veth5-6, veth6-5` has ip address `10.100.5.0/24`, `veth6-3, veth3-6` has ip address `10.100.6.0/24`.
+
+I ran `./router` on `ns1, ns2, ns3, ns4, ns5, ns6`, after some routing updating routine, the routing table is as following:
+
+```
+# ns1
+Routing table length: 6
+Routing entry 0: 
+IP Addr: 10.100.1.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: ff:ff:ff:ff:ff:ff
+Distance: 0
+Device ID: 0
+Routing entry 1: 
+IP Addr: 10.100.2.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: ee:a6:29:c7:19:37
+Distance: 1
+Device ID: 0
+Routing entry 2: 
+IP Addr: 10.100.4.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: ee:a6:29:c7:19:37
+Distance: 1
+Device ID: 0
+Routing entry 3: 
+IP Addr: 10.100.3.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: ee:a6:29:c7:19:37
+Distance: 2
+Device ID: 0
+Routing entry 4: 
+IP Addr: 10.100.6.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: ee:a6:29:c7:19:37
+Distance: 2
+Device ID: 0
+Routing entry 5: 
+IP Addr: 10.100.5.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: ee:a6:29:c7:19:37
+Distance: 2
+Device ID: 0
+
+# ns2
+
+Routing table length: 6
+Routing entry 0: 
+IP Addr: 10.100.1.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: ff:ff:ff:ff:ff:ff
+Distance: 0
+Device ID: 0
+Routing entry 1: 
+IP Addr: 10.100.2.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: ff:ff:ff:ff:ff:ff
+Distance: 0
+Device ID: 1
+Routing entry 2: 
+IP Addr: 10.100.4.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: ff:ff:ff:ff:ff:ff
+Distance: 0
+Device ID: 2
+Routing entry 3: 
+IP Addr: 10.100.3.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: 6e:af:70:0a:5b:b8
+Distance: 1
+Device ID: 1
+Routing entry 4: 
+IP Addr: 10.100.6.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: 6e:af:70:0a:5b:b8
+Distance: 1
+Device ID: 1
+Routing entry 5: 
+IP Addr: 10.100.5.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: 8e:4b:75:73:75:fb
+Distance: 1
+Device ID: 2
+
+# ns3
+
+Routing table length: 6
+Routing entry 0: 
+IP Addr: 10.100.2.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: ff:ff:ff:ff:ff:ff
+Distance: 0
+Device ID: 0
+Routing entry 1: 
+IP Addr: 10.100.3.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: ff:ff:ff:ff:ff:ff
+Distance: 0
+Device ID: 1
+Routing entry 2: 
+IP Addr: 10.100.6.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: ff:ff:ff:ff:ff:ff
+Distance: 0
+Device ID: 2
+Routing entry 3: 
+IP Addr: 10.100.1.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: ae:b6:eb:c1:d1:44
+Distance: 1
+Device ID: 0
+Routing entry 4: 
+IP Addr: 10.100.4.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: ae:b6:eb:c1:d1:44
+Distance: 1
+Device ID: 0
+Routing entry 5: 
+IP Addr: 10.100.5.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: ee:8c:26:5f:bb:bc
+Distance: 1
+Device ID: 2
+
+# ns4 
+
+Routing table length: 6
+Routing entry 0: 
+IP Addr: 10.100.3.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: ff:ff:ff:ff:ff:ff
+Distance: 0
+Device ID: 0
+Routing entry 1: 
+IP Addr: 10.100.2.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: 8a:f7:2e:48:e8:aa
+Distance: 1
+Device ID: 0
+Routing entry 2: 
+IP Addr: 10.100.6.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: 8a:f7:2e:48:e8:aa
+Distance: 1
+Device ID: 0
+Routing entry 3: 
+IP Addr: 10.100.1.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: 8a:f7:2e:48:e8:aa
+Distance: 2
+Device ID: 0
+Routing entry 4: 
+IP Addr: 10.100.4.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: 8a:f7:2e:48:e8:aa
+Distance: 2
+Device ID: 0
+Routing entry 5: 
+IP Addr: 10.100.5.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: 8a:f7:2e:48:e8:aa
+Distance: 2
+Device ID: 0
+
+# ns5
+
+Routing table length: 6
+Routing entry 0: 
+IP Addr: 10.100.4.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: ff:ff:ff:ff:ff:ff
+Distance: 0
+Device ID: 0
+Routing entry 1: 
+IP Addr: 10.100.5.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: ff:ff:ff:ff:ff:ff
+Distance: 0
+Device ID: 1
+Routing entry 2: 
+IP Addr: 10.100.1.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: fe:5e:f9:7d:5c:39
+Distance: 1
+Device ID: 0
+Routing entry 3: 
+IP Addr: 10.100.2.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: fe:5e:f9:7d:5c:39
+Distance: 1
+Device ID: 0
+Routing entry 4: 
+IP Addr: 10.100.3.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: fe:5e:f9:7d:5c:39
+Distance: 2
+Device ID: 0
+Routing entry 5: 
+IP Addr: 10.100.6.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: 1a:34:9a:36:76:ec
+Distance: 1
+Device ID: 1
+
+# ns6
+
+Routing table length: 6
+Routing entry 0: 
+IP Addr: 10.100.6.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: ff:ff:ff:ff:ff:ff
+Distance: 0
+Device ID: 0
+Routing entry 1: 
+IP Addr: 10.100.5.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: ff:ff:ff:ff:ff:ff
+Distance: 0
+Device ID: 1
+Routing entry 2: 
+IP Addr: 10.100.2.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: 22:14:15:fb:3a:ef
+Distance: 1
+Device ID: 0
+Routing entry 3: 
+IP Addr: 10.100.3.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: 22:14:15:fb:3a:ef
+Distance: 1
+Device ID: 0
+Routing entry 4: 
+IP Addr: 10.100.1.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: 22:14:15:fb:3a:ef
+Distance: 2
+Device ID: 0
+Routing entry 5: 
+IP Addr: 10.100.4.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: d2:1e:9e:2d:97:c2
+Distance: 1
+Device ID: 1
+```
+The topleft terminal is running in `ns1`, the topmid terminal is running in `ns2`, etc.
+![image-20211022212855411](checkpoints/CP05/sc01.png)
+
+After stop the `./router` in `ns5`, the routing table is as following:
+
+```
+# ns1
+
+Routing table length: 6
+Routing entry 0: 
+IP Addr: 10.100.1.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: ff:ff:ff:ff:ff:ff
+Distance: 0
+Device ID: 0
+Routing entry 1: 
+IP Addr: 10.100.2.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: ee:a6:29:c7:19:37
+Distance: 1
+Device ID: 0
+Routing entry 2: 
+IP Addr: 10.100.4.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: ee:a6:29:c7:19:37
+Distance: 1
+Device ID: 0
+Routing entry 3: 
+IP Addr: 10.100.3.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: ee:a6:29:c7:19:37
+Distance: 2
+Device ID: 0
+Routing entry 4: 
+IP Addr: 10.100.6.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: ee:a6:29:c7:19:37
+Distance: 2
+Device ID: 0
+Routing entry 5: 
+IP Addr: 10.100.5.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: ee:a6:29:c7:19:37
+Distance: 3
+Device ID: 0
+
+# ns2
+
+Routing table length: 6
+Routing entry 0: 
+IP Addr: 10.100.1.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: ff:ff:ff:ff:ff:ff
+Distance: 0
+Device ID: 0
+Routing entry 1: 
+IP Addr: 10.100.2.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: ff:ff:ff:ff:ff:ff
+Distance: 0
+Device ID: 1
+Routing entry 2: 
+IP Addr: 10.100.4.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: ff:ff:ff:ff:ff:ff
+Distance: 0
+Device ID: 2
+Routing entry 3: 
+IP Addr: 10.100.3.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: 6e:af:70:0a:5b:b8
+Distance: 1
+Device ID: 1
+Routing entry 4: 
+IP Addr: 10.100.6.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: 6e:af:70:0a:5b:b8
+Distance: 1
+Device ID: 1
+Routing entry 5: 
+IP Addr: 10.100.5.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: 6e:af:70:0a:5b:b8
+Distance: 2
+Device ID: 1
+
+# ns3
+
+Routing table length: 6
+Routing entry 0: 
+IP Addr: 10.100.2.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: ff:ff:ff:ff:ff:ff
+Distance: 0
+Device ID: 0
+Routing entry 1: 
+IP Addr: 10.100.3.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: ff:ff:ff:ff:ff:ff
+Distance: 0
+Device ID: 1
+Routing entry 2: 
+IP Addr: 10.100.6.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: ff:ff:ff:ff:ff:ff
+Distance: 0
+Device ID: 2
+Routing entry 3: 
+IP Addr: 10.100.1.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: ae:b6:eb:c1:d1:44
+Distance: 1
+Device ID: 0
+Routing entry 4: 
+IP Addr: 10.100.4.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: ae:b6:eb:c1:d1:44
+Distance: 1
+Device ID: 0
+Routing entry 5: 
+IP Addr: 10.100.5.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: ee:8c:26:5f:bb:bc
+Distance: 1
+Device ID: 2
+
+# ns4
+
+Routing table length: 6
+Routing entry 0: 
+IP Addr: 10.100.3.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: ff:ff:ff:ff:ff:ff
+Distance: 0
+Device ID: 0
+Routing entry 1: 
+IP Addr: 10.100.2.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: 8a:f7:2e:48:e8:aa
+Distance: 1
+Device ID: 0
+Routing entry 2: 
+IP Addr: 10.100.6.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: 8a:f7:2e:48:e8:aa
+Distance: 1
+Device ID: 0
+Routing entry 3: 
+IP Addr: 10.100.1.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: 8a:f7:2e:48:e8:aa
+Distance: 2
+Device ID: 0
+Routing entry 4: 
+IP Addr: 10.100.4.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: 8a:f7:2e:48:e8:aa
+Distance: 2
+Device ID: 0
+Routing entry 5: 
+IP Addr: 10.100.5.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: 8a:f7:2e:48:e8:aa
+Distance: 2
+Device ID: 0
+
+# ns6
+
+Routing table length: 6
+Routing entry 0: 
+IP Addr: 10.100.6.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: ff:ff:ff:ff:ff:ff
+Distance: 0
+Device ID: 0
+Routing entry 1: 
+IP Addr: 10.100.5.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: ff:ff:ff:ff:ff:ff
+Distance: 0
+Device ID: 1
+Routing entry 2: 
+IP Addr: 10.100.2.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: 22:14:15:fb:3a:ef
+Distance: 1
+Device ID: 0
+Routing entry 3: 
+IP Addr: 10.100.3.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: 22:14:15:fb:3a:ef
+Distance: 1
+Device ID: 0
+Routing entry 4: 
+IP Addr: 10.100.1.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: 22:14:15:fb:3a:ef
+Distance: 2
+Device ID: 0
+Routing entry 5: 
+IP Addr: 10.100.4.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: 22:14:15:fb:3a:ef
+Distance: 2
+Device ID: 0
+```
+![image-20211022212855411](checkpoints/CP05/sc02.png)
+
+### Checkpoint 6 (CP6).
+
+### Checkpoint 5 (CP5).
+
+I used `checkpoint/CP06/vnet.txt` to build the vNet.The network has the following topology:
+
+```
+ns1 --- ns2 --- ns3 --- ns4
+        |       
+        ns5
+```
+
+`veth1-2, veth2-1` has ip address `10.100.1.0/24`, `veth2-3, veth3-2` has ip address `10.100.2.0/24`, `veth3-4, veth4-3` has ip address `10.100.3.0/24`, `veth2-5, veth5-2` has ip address `10.100.4.0/24`.
+
+I ran `./router` on `ns3, ns4, ns5`, ran `./router_2` on `ns2`, ran `./ip_sender` on `ns1`. 
+`./router_2` is a common `./router` with manually setting up the routing table that packet with "dest ip:0.0.0.0, mask:0.0.0.0" will be forwarded to `ns5`.
+After some routing updating routine, the routing table of `ns2` is as following:
+
+```
+Routing table length: 5
+Routing entry 0: 
+IP Addr: 10.100.1.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: ff:ff:ff:ff:ff:ff
+Distance: 0
+Device ID: 0
+Routing entry 1: 
+IP Addr: 10.100.2.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: ff:ff:ff:ff:ff:ff
+Distance: 0
+Device ID: 1
+Routing entry 2: 
+IP Addr: 10.100.4.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: ff:ff:ff:ff:ff:ff
+Distance: 0
+Device ID: 2
+Routing entry 3: 
+IP Addr: 0.0.0.0
+IP Mask: 0.0.0.0
+Dst Mac Addr: ff:ff:ff:ff:ff:ff
+Distance: 0
+Device ID: 2
+Routing entry 4: 
+IP Addr: 10.100.3.0
+IP Mask: 255.255.255.0
+Dst Mac Addr: 8e:8c:a0:b7:8c:c9
+Distance: 1
+Device ID: 1
+```
+
+`./ip_sender` in `ns1` send packet to `10.100.3.2` at `ns4`. When the packet arrived at `ns2`, `ns2` print the message below which showed the `ns2` forwarded the ip packet applying the "longest prefix matching" rule:
+
+```
+Forward IP Packet Form Src 10.100.1.1, Dst 10.100.3.2, TTL=63, Next Hop MAC: 8e:8c:a0:b7:8c:c9 Len=65
+```
+
+And we can see `ns4` successfully received the packet with correct TTL:
+
+
+![image-20211022212855411](checkpoints/CP06/sc01.png)

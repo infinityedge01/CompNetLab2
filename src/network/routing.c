@@ -53,6 +53,7 @@ int user_add_routing_entry(uint32_t ip_addr, uint32_t ip_mask, const void *nextH
     memcpy(user_routing_entries[user_routing_entry_count].dest_mac_addr, nextHopMAC, ETH_ALEN);
     user_routing_entries[user_routing_entry_count].distance = 0;
     user_routing_entries[user_routing_entry_count].device_id = device_id;
+    user_routing_entry_count ++;
     pthread_mutex_unlock(&user_routing_entry_mutex);
 }
 
