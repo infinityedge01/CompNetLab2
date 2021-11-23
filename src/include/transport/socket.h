@@ -8,6 +8,30 @@ IPv4.
 #include <netdb.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+
+#define MAX_PORT_NUM 65536
+
+#define OPT_SOCKET 0
+#define OPT_BIND 1
+#define OPT_LISTEN 2
+#define OPT_CONNECT 3
+#define OPT_ACCEPT 4
+
+extern char socket_pipe_dir[];
+extern char socket_pipe_request[];
+extern char socket_pipe_response[];
+
+extern char ns_name[256];
+extern int socket_id_list[MAX_PORT_NUM];
+
+int set_ns_name(char * name);
+
+int alloc_socket_id(int val);
+
+int get_socket_val(int socket_id);
+
+int free_socket_id(int socket_id);
+
 /**
 * @see [POSIX.1-2017:socket](http://pubs.opengroup.org/onlinepubs/
 * 9699919799/functions/socket.html)
