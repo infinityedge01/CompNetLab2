@@ -264,8 +264,8 @@ int routing_query(uint32_t ip_addr, void* dest_mac_addr, int* device_id){
         }
     }
     if(entry_id != -1){
-        memcpy(dest_mac_addr, routing_entries[entry_id].dest_mac_addr, ETH_ALEN);
-        *device_id = routing_entries[entry_id].device_id;
+        if(dest_mac_addr != NULL) memcpy(dest_mac_addr, routing_entries[entry_id].dest_mac_addr, ETH_ALEN);
+        if(device_id != NULL) *device_id = routing_entries[entry_id].device_id; 
     }
     pthread_mutex_lock(&routing_reader_mutex);
     routing_reader_cnt --;

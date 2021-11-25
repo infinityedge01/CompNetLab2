@@ -49,20 +49,21 @@ FILE *request_fd, *response_fd;
 char ns_name[256];
 char request_pipe[256];
 char response_pipe[256];
-int initialize_response_pipe(){
+int initialize_response_pipe(int response_id){
+    response_pipe[0] = '\0';
     strcat(response_pipe, socket_pipe_dir);
     strcat(response_pipe, socket_pipe_response);
     strcat(response_pipe, ns_name);
-    sprintf(response_pipe + strlen(response_pipe), "%d", getpid());
+    sprintf(response_pipe + strlen(response_pipe), "%d", response_id);
     int ret = mkfifo(response_pipe, 0666);
-    printf("%s\n", response_pipe);
+    //printf("%s\n", response_pipe);
     if(ret == -1 && errno != EEXIST){
         #ifdef DEBUG
         printf("mkfifo failed with errno %d\n", errno);
         #endif
         return ret;
     }
-    printf("%d\n", ret);
+    //printf("%d\n", ret);
     return 0;
 }
 int wirte_request_pipe(char* buf){
@@ -105,18 +106,27 @@ int read_response_pipe(){
     int ret;
     fscanf(response_fd, "%d", &ret);
     close(response_f);
+    response_f = 0;
     return ret;
 }
 
+int read_response_pipe_accept(int *sock_id, uint32_t *d_addr, uint16_t *d_port){
+    response_f = open(response_pipe, O_RDONLY);
+    response_fd = fdopen(response_f, "r");
+    fscanf(response_fd, "%d%x%hu", sock_id, d_addr, d_port);
+    close(response_f);
+    response_f = 0;
+    return 0;
+}
+
+
 int __wrap_socket(int domain, int type, int protocol){
     if(domain == AF_INET && type == SOCK_STREAM && (protocol == 0 || protocol == IPPROTO_TCP)){
-        if(!response_fd){
-            initialize_response_pipe();
-        }
         char request_buf[256];
         sprintf(request_buf, "%d %d\n", OPT_SOCKET, getpid());
         //puts(request_buf);
         wirte_request_pipe(request_buf);
+        initialize_response_pipe(getpid());
         int ret = read_response_pipe();
         int socket_id = alloc_socket_id(ret);
         #ifdef DEBUG
@@ -140,6 +150,7 @@ socklen_t address_len){
         sprintf(request_buf, "%d %d %08x %hu\n", OPT_BIND, get_socket_val(socket), addr->sin_addr.s_addr, addr->sin_port);
         //puts(request_buf);
         wirte_request_pipe(request_buf);
+        initialize_response_pipe(get_socket_val(socket));
         int ret = read_response_pipe();
         #ifdef DEBUG
             printf("process %d bind socket id %d local id %d with address %08x port %hu with ret %d\n", getpid(),   get_socket_val(socket), socket, addr->sin_addr.s_addr, addr->sin_port, ret);
@@ -162,6 +173,7 @@ int __wrap_listen(int socket, int backlog){
         }
         char request_buf[256];
         sprintf(request_buf, "%d %d %d\n", OPT_LISTEN, get_socket_val(socket), backlog);
+        initialize_response_pipe(get_socket_val(socket));
         wirte_request_pipe(request_buf);
         int ret = read_response_pipe();
         #ifdef DEBUG
@@ -172,6 +184,57 @@ int __wrap_listen(int socket, int backlog){
             return -1;
         }
         return ret;
+    } else {
+        return -1;
+    }
+}
+
+int __wrap_connect(int socket, const struct sockaddr * address ,
+socklen_t address_len){
+    int ret;
+    if (socket >= MAX_PORT_NUM) {
+        const struct sockaddr_in *addr = (const struct sockaddr_in*)address;
+        if(addr->sin_family != AF_INET){
+            return -1;
+        }
+        char request_buf[256];
+        sprintf(request_buf, "%d %d %08x %hu\n", OPT_CONNECT, get_socket_val(socket), addr->sin_addr.s_addr, addr->sin_port);
+        //puts(request_buf);
+        initialize_response_pipe(get_socket_val(socket));
+        wirte_request_pipe(request_buf);
+        int ret = read_response_pipe();
+        #ifdef DEBUG
+            printf("process %d connect socket id %d local id %d with address %08x port %hu with ret %d\n", getpid(),   get_socket_val(socket), socket, addr->sin_addr.s_addr, addr->sin_port, ret);
+        #endif // DEBUG
+        if(ret < 0){
+            errno = -ret;
+            return -1;
+        }
+        return ret;
+    } else {
+        return -1;
+    }
+}
+
+int __wrap_accept(int socket, struct sockaddr *address, socklen_t *address_len) {
+    int ret;
+    if (socket >= MAX_PORT_NUM) {
+        char request_buf[256];
+        sprintf(request_buf, "%d %d\n", OPT_ACCEPT, get_socket_val(socket));
+        initialize_response_pipe(get_socket_val(socket));
+        wirte_request_pipe(request_buf);
+        struct sockaddr_in *addr = (struct sockaddr_in*)address;
+        int ret;
+        read_response_pipe_accept(&ret, &(addr->sin_addr.s_addr), &(addr->sin_port));
+        if(ret < 0){
+            errno = -ret;
+            return -1;
+        }
+        int socket_id = alloc_socket_id(ret);
+        #ifdef DEBUG
+            printf("process %d accept socket id %d local id %d with address %08x port %hu with new socket id %d local id %d\n", getpid(),   get_socket_val(socket), socket, addr->sin_addr.s_addr, addr->sin_port, ret, socket_id);
+        #endif // DEBUG
+        return socket_id;
     } else {
         return -1;
     }

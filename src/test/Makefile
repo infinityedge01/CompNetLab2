@@ -5,7 +5,8 @@ LDFLAGS := -lpcap -lpthread
 INCLUDE := -I ../include
 
 files := $(shell find ../ -name "*.o")
-OBJS = arp_sender arp_receiver router ip_sender router_2 tcp_server tcp_protocol_stack
+OBJS = arp_sender arp_receiver router ip_sender router_2 tcp_server tcp_protocol_stack tcp_client
+#OBJS = tcp_server tcp_protocol_stack tcp_client
 all:$(OBJS)
 $(OBJS):% :%.c
 	$(CC) $(CFLAGS) $< $(files) -o $@ ${LDFLAGS} ${INCLUDE}

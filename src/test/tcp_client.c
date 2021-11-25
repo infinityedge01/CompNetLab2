@@ -19,14 +19,8 @@ int main(int argc, char **argv){
         addr.sin_family = AF_INET;
         inet_pton(AF_INET, "10.100.1.1", &addr.sin_addr.s_addr);
         addr.sin_port = 1123;
-        int y = __wrap_bind(x, (struct sockaddr *)&addr, sizeof(addr));
-        int z = __wrap_listen(x, 1024);
-        printf("%d %d %d\n", x, y, z);
-        int socket_id;
-        struct sockaddr address;
-        socklen_t address_len;
-        socket_id = __wrap_accept(x, &address, &address_len);
-        printf("%d\n", socket_id);
+        int y = __wrap_connect(x, (struct sockaddr *)&addr, sizeof(addr));
+        printf("%d %d\n", x, y);
     //}
     return 0;
 }

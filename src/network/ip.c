@@ -29,7 +29,7 @@ int IP_init(){
 
 int sendIPPacket(const struct in_addr src, const struct in_addr dest,
 int proto, const void *buf, int len){
-    
+    int ret;
     size_t send_len = sizeof(struct iphdr) + len;
     unsigned char *send_buf = malloc(send_len);
     struct iphdr *hdr = (struct iphdr *)send_buf;
@@ -50,9 +50,9 @@ int proto, const void *buf, int len){
     void *ip_payload = ((void *)send_buf) + (((size_t)hdr->ihl) << 2);
     memcpy(ip_payload, buf, len);
 
-    forwardPacket(send_buf, send_len);
+    ret = forwardPacket(send_buf, send_len);
     free(send_buf);
-    return 0;
+    return ret;
 }
 
 int IPEthCallback(const void* buf, int len, int id) {
@@ -61,7 +61,9 @@ int IPEthCallback(const void* buf, int len, int id) {
     const struct iphdr *data = (struct iphdr *)(buf + ETH_HLEN);
     int device_id = -1;
     for(int i = 0; i < cntdev; i ++){
-        if(data->daddr == device_ip_addr[i]){
+        if(data->daddr == device_ip_addr[i] || 
+        ((data->daddr & (~device_ip_mask_addr[i])) == (~device_ip_mask_addr[i]) && 
+        (data->daddr & (device_ip_mask_addr[i])) == (device_ip_addr[i] & device_ip_mask_addr[i]))){
             device_id = i;
             break;
         }

@@ -29,18 +29,23 @@ int forwardPacket(const void* send_buf, int len){
         return -1;
     }
     if(!compare_mac_address(nextHopMAC, broadcast_address)){ // only when distance is 0
-        struct arp_record * rec;
-        rec = find_arp_record(hdr->daddr);
-        if(rec == NULL){
-            ret = send_arp_broadcast(&(hdr->daddr), device_id);
-            if(ret == -1){
-                #ifdef DEBUG
-                    printf("send_arp_broadcast() in sendIPPacket() failed.\n");
-                #endif // DEBUG
-                return -1;
-            }
+        if(((hdr->daddr & (~device_ip_mask_addr[device_id])) == (~device_ip_mask_addr[device_id]) && 
+        (hdr->daddr & (device_ip_mask_addr[device_id])) == (device_ip_addr[device_id] & device_ip_mask_addr[device_id]))){ // IP broadcast
+            memcpy(nextHopMAC, broadcast_address, ETH_ALEN); 
         }else{
-            memcpy(nextHopMAC, rec->mac_addr, ETH_ALEN);
+            struct arp_record * rec;
+            rec = find_arp_record(hdr->daddr);
+            if(rec == NULL){
+                ret = send_arp_broadcast(&(hdr->daddr), device_id);
+                if(ret == -1){
+                    #ifdef DEBUG
+                        printf("send_arp_broadcast() in sendIPPacket() failed.\n");
+                    #endif // DEBUG
+                    return -1;
+                }
+            }else{
+                memcpy(nextHopMAC, rec->mac_addr, ETH_ALEN);
+            }
         }
     }
     sendFrame(send_buf, len, ETH_P_IP, nextHopMAC, device_id);
