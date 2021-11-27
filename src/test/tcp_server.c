@@ -9,6 +9,7 @@
 #include <pthread.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+char buf[1024];
 int main(int argc, char **argv){
     set_ns_name(argv[1]);
     //while(1){
@@ -27,6 +28,18 @@ int main(int argc, char **argv){
         socklen_t address_len;
         socket_id = __wrap_accept(x, &address, &address_len);
         printf("%d\n", socket_id);
+        while(1){
+            int ret = __wrap_read(socket_id, buf, 1024);
+            if(ret <= 0){
+                printf("%d\n", ret);
+                break;
+            }
+            printf("%d\n", ret);
+            for(int i = 0; i < ret; i ++){
+                putchar(buf[i]);
+            }
+            printf("\n");
+        }
     //}
     return 0;
 }

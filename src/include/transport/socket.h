@@ -16,11 +16,18 @@ IPv4.
 #define OPT_LISTEN 2
 #define OPT_CONNECT 3
 #define OPT_ACCEPT 4
+#define OPT_READ 5
+#define OPT_WRITE 6
+#define OPT_CLOSE 7
+
+
+
 
 extern char socket_pipe_dir[];
 extern char socket_pipe_request[];
 extern char socket_pipe_response[];
-
+extern char socket_pipe_read[];
+extern char socket_pipe_write[];
 extern char ns_name[256];
 extern int socket_id_list[MAX_PORT_NUM];
 

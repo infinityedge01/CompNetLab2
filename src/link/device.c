@@ -56,7 +56,7 @@ int addDevice(const char * device){
         #endif
         return -1;
     }
-    pcap_t *handle = pcap_open_live(device, 65536, 0, 1000, pcap_errbuf);
+    pcap_t *handle = pcap_open_live(device, 65536, 0, 1, pcap_errbuf);
     if(handle == NULL){
         #ifdef DEBUG
         fprintf(stderr, "Error at pcap_open_live() in addDevice(): %s\n", pcap_errbuf);

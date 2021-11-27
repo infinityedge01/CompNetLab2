@@ -20,7 +20,9 @@ int main(int argc, char **argv){
         inet_pton(AF_INET, "10.100.1.1", &addr.sin_addr.s_addr);
         addr.sin_port = 1123;
         int y = __wrap_connect(x, (struct sockaddr *)&addr, sizeof(addr));
-        printf("%d %d\n", x, y);
+        char send_buf[] = "Subscribe to Diana and your hunger will be satisfied.";
+        __wrap_write(x, send_buf, sizeof(send_buf));
+        __wrap_close(x);
     //}
     return 0;
 }

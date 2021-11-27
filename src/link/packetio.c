@@ -6,7 +6,7 @@
 #include <pthread.h>
 #include <string.h>
 #include <malloc.h>
-
+#include<sys/time.h>
 typedef unsigned char uchar;
 unsigned char broadcast_address[6] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 pthread_mutex_t sendpacket_mutex, callback_mutex;
@@ -95,7 +95,14 @@ int start_capture(int id){
     struct pcap_pkthdr *hdr;
     uchar *packet;
     while(1){
+        //struct timespec t;
+        //clock_gettime(CLOCK_REALTIME, &t);
+        //printf("get1:%lld:%lld\n", (long long)t.tv_sec, (long long)t.tv_nsec);
+
         int ret = pcap_next_ex(device_handles[id], &hdr,(const uchar **)&packet);
+        //clock_gettime(CLOCK_REALTIME, &t);
+        //printf("get2:%lld:%lld\n", (long long)t.tv_sec, (long long)t.tv_nsec);
+        
         if(ret == 0){
             #ifdef DEBUG
             fprintf(stderr, "Packet Timeout in device %s\n", devices[id]->name);

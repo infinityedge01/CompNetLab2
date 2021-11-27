@@ -9,15 +9,26 @@
 #include <network/ip.h>
 #include <transport/ring_buffer.h>
 
+#include <pthread.h>
+
 #define SOCKET_TYPE_CONNECTION 0
 #define SOCKET_TYPE_DATA 1
 
 #define SOCKET_UNCONNECTED 0
+#define SOCKET_CLOSE 0
 #define SOCKET_BINDED 1
 #define SOCKET_LISTEN 2
 #define SOCKET_SYN_SENT 3
 #define SOCKET_SYN_RECV 4
 #define SOCKET_ESTABLISHED 5
+
+#define SOCKET_FIN_WAIT1 1
+#define SOCKET_FIN_WAIT2 2
+#define SOCKET_TIME_WAIT 3
+#define SOCKET_CLOSE_WAIT 4
+#define SOCKET_LAST_ACK 5
+
+#define MAX_SEGMENT_LENGTH 1460
 
 struct data_socket_t{
     int data_socket_id;
@@ -66,6 +77,12 @@ struct socket_info_t{
     struct waiting_connection_t *last;
     int waiting_connection_count;
     int backlog;
+    FILE *write_file;
+    int write_f, read_flag;
+    int read_cnt, read_len, write_cnt, write_len, peer_window_size;
+    pthread_t resend_pthread, fin_pthread;
+    uint32_t timeout;
+    int fin_state, fin_tag;
 };
 
 struct segment_t {

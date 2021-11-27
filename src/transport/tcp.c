@@ -152,13 +152,13 @@ int freeSegment(struct segment_t** dst){
 }
 
 uint16_t tcp_checksum(struct socket_info_t *sock, struct tcphdr *hdr, uint16_t len){
-    unsigned char* buf = malloc((size_t)((hdr->doff) << 2) + 12);
+    unsigned char* buf = malloc((size_t)(len) + 12);
     memcpy(buf, &(sock->s_addr), 4);
     memcpy(buf + 4, &(sock->d_addr), 4);
     *(uint16_t *)(buf + 8) = htons(IPPROTO_TCP);
     *(uint16_t *)(buf + 10) = htons(len);
-    memcpy(buf + 12, hdr, (size_t)((hdr->doff) << 2));
-    return checksum((uint16_t *)buf, (size_t)((hdr->doff) << 2) + 12);
+    memcpy(buf + 12, hdr, (size_t)(len));
+    return checksum((uint16_t *)buf, (size_t)(len) + 12);
 }
 int sendTCPSegment(struct segment_t *seg, struct socket_info_t *sock, uint16_t ack, uint32_t ack_seq, uint16_t window){
     int ret;
@@ -176,11 +176,11 @@ int sendTCPSegment(struct segment_t *seg, struct socket_info_t *sock, uint16_t a
     hdr->ack_seq = htonl(ack_seq);
     hdr->window = htons(window);
 
-    hdr->check = 0;
-    hdr->check = tcp_checksum(sock, hdr, send_len);
-
     void *data = (void *)(send_buf + ((hdr->doff) << 2));
     memcpy(data, seg->data, seg->len);
+
+    hdr->check = 0;
+    hdr->check = tcp_checksum(sock, hdr, send_len);
 
     struct in_addr src, dst;
     src.s_addr = sock->s_addr;
@@ -228,7 +228,7 @@ int sendTCPControlSegment(struct socket_info_t *sock, uint16_t syn, uint32_t seq
     char src_ip[20], dst_ip[20];
     inet_ntop(AF_INET, &sock->s_addr, src_ip, 20);
     inet_ntop(AF_INET, &sock->d_addr, dst_ip, 20);
-    printf("send tcp packet from %s:%d to %s:%d SYN=%d seq=%d ACK=%d ACKseq=%d\n", src_ip, sock->s_port, dst_ip, sock->d_port, hdr->syn, hdr->seq, hdr->ack, hdr->ack_seq);
+    printf("send tcp packet from %s:%d to %s:%d SYN=%d seq=%d ACK=%d ACKseq=%d\n", src_ip, sock->s_port, dst_ip, sock->d_port, hdr->syn, htonl(hdr->seq), hdr->ack, htonl(hdr->ack_seq));
     #endif // DEBUG
 
     free(send_buf);

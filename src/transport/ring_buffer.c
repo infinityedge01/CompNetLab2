@@ -16,11 +16,15 @@ int free_ring_buffer(struct ring_buffer_t **dst){
     return 0;
 }
 
-size_t get_buffer_free_size(struct ring_buffer_t *r){
+ssize_t get_buffer_size(struct ring_buffer_t *r){
+    return (r->ed - r->st) & (RING_BUFFER_SIZE - 1);
+}
+
+ssize_t get_buffer_free_size(struct ring_buffer_t *r){
     return (r->st - r->ed - 1) & (RING_BUFFER_SIZE - 1);
 }
 
-int push_ring_buffer(struct ring_buffer_t *r, void *data, size_t size){
+int push_ring_buffer(struct ring_buffer_t *r, void *data, ssize_t size){
     if(size > get_buffer_free_size(r)) return -1;
     if(RING_BUFFER_SIZE - r->ed >= size){
         memcpy((void *)(r->buf + r->ed), data, size);
@@ -33,16 +37,41 @@ int push_ring_buffer(struct ring_buffer_t *r, void *data, size_t size){
     return 0;
 }
 
-size_t consume_ring_buffer(struct ring_buffer_t *r, void *data, size_t size){
-    size_t rsize = get_buffer_free_size(r);
+ssize_t get_ring_buffer(struct ring_buffer_t *r, void *data, ssize_t offset, ssize_t size){
+    ssize_t rsize = get_buffer_size(r);
+    if(offset >= rsize) return 0;
+    if(size + offset > rsize) size = rsize - offset;
+    if(RING_BUFFER_SIZE >= r->st + size + offset){
+        if(data != NULL){
+            memcpy(data, (void *)(r->buf + r->st + offset), size);
+        }
+        return size;
+    }
+    if(data != NULL){
+        if(r->st + offset < RING_BUFFER_SIZE){
+            memcpy(data, (void *)(r->buf + r->st + offset), RING_BUFFER_SIZE - r->st - offset);
+            memcpy(data + RING_BUFFER_SIZE - r->st - offset, (void *)(r->buf), size - (RING_BUFFER_SIZE - r->st - offset));
+        }else{
+            memcpy(data, (void *)(r->buf) + r->st + offset - RING_BUFFER_SIZE, size);
+        }
+    }
+    return size;
+}
+
+ssize_t consume_ring_buffer(struct ring_buffer_t *r, void *data, ssize_t size){
+    ssize_t rsize = get_buffer_size(r);
     if(size > rsize) size = rsize;
     if(RING_BUFFER_SIZE - r->st >= size){
-        memcpy(data, (void *)(r->buf + r->st), size);
+        if(data != NULL){
+            memcpy(data, (void *)(r->buf + r->st), size);
+        }
         r->st = (r->st + size) & (RING_BUFFER_SIZE - 1);
         return size;
     }
-    memcpy(data, (void *)(r->buf + r->st), RING_BUFFER_SIZE - r->st);
-    memcpy(data + RING_BUFFER_SIZE - r->st, (void *)(r->buf), size - (RING_BUFFER_SIZE - r->st));
+    if(data != NULL){
+        memcpy(data, (void *)(r->buf + r->st), RING_BUFFER_SIZE - r->st);
+        memcpy(data + RING_BUFFER_SIZE - r->st, (void *)(r->buf), size - (RING_BUFFER_SIZE - r->st));
+    }
     r->st = size - (RING_BUFFER_SIZE - r->st);
     return size;
 }
