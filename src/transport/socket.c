@@ -9,6 +9,19 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+int __real_socket(int domain, int type, int protocol);
+int __real_bind(int socket, const struct sockaddr * address ,
+socklen_t address_len);
+int __real_listen(int socket, int backlog);
+int __real_connect(int socket, const struct sockaddr * address ,
+socklen_t address_len);
+int __real_accept(int socket, struct sockaddr * address ,
+socklen_t * address_len);
+ssize_t __real_read(int fildes, void *buf, size_t nbyte);
+ssize_t __real_write(int fildes, const void *buf, size_t nbyte);
+int __real_close(int fildes);
+int __real_getaddrinfo(const char *node, const char * service, const struct addrinfo *hints, struct addrinfo ** res);
+
 char socket_pipe_dir[] = "/root/.mytcppipe/";
 char socket_pipe_request[] = "pipe_req_";
 char socket_pipe_response[] = "pipe_resp_";
@@ -217,7 +230,7 @@ int __wrap_socket(int domain, int type, int protocol){
         #endif // DEBUG
         return socket_id;
     }else{
-        return -1;
+        return __real_socket(domain, type, protocol);
     }
 }
 
@@ -244,7 +257,7 @@ socklen_t address_len){
         }
         return ret;
     } else {
-        return -1;
+        return __real_bind(socket, address, address_len);
     }
 }
 
@@ -268,7 +281,7 @@ int __wrap_listen(int socket, int backlog){
         }
         return ret;
     } else {
-        return -1;
+        return __real_listen(socket, backlog);
     }
 }
 
@@ -295,7 +308,7 @@ socklen_t address_len){
         }
         return ret;
     } else {
-        return -1;
+        return __real_connect(socket, address, address_len);
     }
 }
 
@@ -319,7 +332,7 @@ int __wrap_accept(int socket, struct sockaddr *address, socklen_t *address_len) 
         #endif // DEBUG
         return socket_id;
     } else {
-        return -1;
+        return __real_accept(socket, address, address_len);
     }
 }
 
@@ -337,9 +350,12 @@ ssize_t __wrap_read(int fildes, void *buf, size_t nbyte){
         ret = read_response_pipe();
         //printf("%ld\n", ret);
         
-        if(ret <= 0){
+        if(ret < 0){
             errno = -ret;
             return ret;
+        }
+        if(ret == 0){
+            free_socket_id(fildes);
         }
         if(ret > 0){
             ssize_t len = read_read_pipe(buf, ret);
@@ -350,7 +366,7 @@ ssize_t __wrap_read(int fildes, void *buf, size_t nbyte){
         }
         return ret;
     } else {
-        return -1;
+        return __real_read(fildes, buf, nbyte);
     }
 }
 
@@ -379,7 +395,7 @@ ssize_t __wrap_write(int fildes, const void *buf, size_t nbyte){
         #endif // DEBUG
         return ret;
     } else {
-        return -1;
+        return __real_write(fildes, buf, nbyte);
     }
 }
 
@@ -397,11 +413,18 @@ int __wrap_close(int fildes){
         if(ret < 0){
             errno = -ret;
             return ret;
+        }else{
+            free_socket_id(fildes);
         }
         #ifdef DEBUG
             printf("process %d close socket id %d local id %d with ret %d\n", getpid(), get_socket_val(fildes), fildes, ret);
         #endif // DEBUG
+        return ret;
     } else {
-        return -1;
+        return __real_close(fildes);
     }
+}
+
+int __wrap_getaddrinfo(const char *node, const char * service, const struct addrinfo *hints, struct addrinfo ** res){
+    return __real_getaddrinfo(node, service, hints, res);
 }

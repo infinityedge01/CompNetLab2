@@ -81,7 +81,7 @@ struct socket_info_t{
     int write_f, read_flag;
     int read_cnt, read_len, write_cnt, write_len, peer_window_size;
     pthread_t resend_pthread, fin_pthread;
-    uint32_t timeout;
+    uint32_t timeout, reset_time;
     int fin_state, fin_tag;
 };
 
@@ -100,6 +100,6 @@ int delete_waiting_connection(struct socket_info_t *s, uint32_t d_addr, uint16_t
 
 int sendTCPSegment(struct segment_t *seg, struct socket_info_t *sock, uint16_t ack, uint32_t ack_seq, uint16_t window);
 
-int sendTCPControlSegment(struct socket_info_t *sock, uint16_t syn, uint32_t seq, uint16_t ack, uint32_t ack_seq, uint16_t fin, uint16_t window);
+int sendTCPControlSegment(struct socket_info_t *sock, uint16_t syn, uint32_t seq, uint16_t ack, uint32_t ack_seq, uint16_t fin, uint16_t rst, uint16_t window);
 
 #endif

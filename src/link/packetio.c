@@ -20,17 +20,17 @@ int ethtype, const void * destmac, int id){
         #endif
         return -1;
     }
-    size_t frame_len = sizeof(struct ethhdr) + len + 4;
+    size_t frame_len = sizeof(struct ethhdr) + len;
     char* framebuf = (char*)malloc(frame_len);
     struct ethhdr *hdr = (struct ethhdr *)framebuf;
     void* data = (void*)(framebuf + sizeof(struct ethhdr));
-    void* checksum = (void*)(framebuf + sizeof(struct ethhdr) + len);
+    //void* checksum = (void*)(framebuf + sizeof(struct ethhdr) + len);
     
     memcpy(&hdr->h_dest, destmac, ETH_ALEN);
     memcpy(&hdr->h_source, device_mac_addr[id], ETH_ALEN);
     hdr->h_proto = htons(ethtype); // convert to network endian
     memcpy(data, buf, len);
-    memset(checksum, 0, 4); // leave CRC zero
+    //memset(checksum, 0, 4); // leave CRC zero
     pthread_mutex_lock(&sendpacket_mutex);
     int ret = pcap_sendpacket(device_handles[id], framebuf, frame_len);
     if (ret != 0){

@@ -1,6 +1,6 @@
 CC 	    := gcc
-CFLAGS  := -g3
-CFLAGS 	+= $(DEBUG)
+CFLAGS  := -g3 -Wl,--wrap,socket -Wl,--wrap,bind -Wl,--wrap,listen -Wl,--wrap,connect -Wl,--wrap,accept -Wl,--wrap,read -Wl,--wrap,write -Wl,--wrap,close -Wl,--wrap,getaddrinfo
+CFLAGS 	+= $(DEBUG) 
 LDFLAGS := -lpcap -lpthread
 INCLUDE := -I ../include
 
