@@ -52,7 +52,7 @@ void free_socket(int socket_id, int from_timeout){
     
     struct socket_info_t *s = &sockets[socket_id - MAX_PORT_NUM];
     s->valid = 0;
-    free_socket_id(socket_id);
+    
     free_ring_buffer(&s->input_buffer);
     free_ring_buffer(&s->output_buffer);
     struct waiting_connection_t *p = s->first;
@@ -64,10 +64,18 @@ void free_socket(int socket_id, int from_timeout){
         free(p);
     }
     if(s->device_id != -1){
-        if(device_ports[s->device_id]->ports[s->s_port].connect_socket_id == socket_id){
-            device_ports[s->device_id]->ports[s->s_port].connect_socket_id = 0;
+        if(s->device_id == 9999){
+            for(int i = 0; i < numdevice; i ++){
+                if(device_ports[i]->ports[s->s_port].connect_socket_id == socket_id){
+                    device_ports[i]->ports[s->s_port].connect_socket_id = 0;
+                }
+            }
+        }else{
+            if(device_ports[s->device_id]->ports[s->s_port].connect_socket_id == socket_id){
+                device_ports[s->device_id]->ports[s->s_port].connect_socket_id = 0;
+            }
+            delete_data_socket(&(device_ports[s->device_id]->ports[s->s_port]), socket_id);
         }
-        delete_data_socket(&(device_ports[s->device_id]->ports[s->s_port]), socket_id);
     }
     if(s->resend_pthread && !from_timeout){
         pthread_cancel(s->resend_pthread);
@@ -77,6 +85,7 @@ void free_socket(int socket_id, int from_timeout){
 }
 
 int find_device_by_ip(uint32_t addr){
+    if(addr == 0) return 9999;
     for(int i = 0; i < numdevice; i ++){
         if(device_ip_addr[i] == addr){
             return i;
@@ -90,7 +99,13 @@ int can_bind(struct socket_info_t *s) {
     if (s->type != SOCKET_TYPE_CONNECTION) {return -EINVAL;}
     if (s->state != SOCKET_CLOSE) {return -EINVAL;}
     if (s->device_id < 0) {return -EADDRNOTAVAIL;}
-    if (device_ports[s->device_id]->ports[s->s_port].connect_socket_id) {return -EADDRINUSE;}
+    if (s->device_id == 9999){
+        for(int i = 0; i < numdevice; i ++){
+            if (device_ports[i]->ports[s->s_port].connect_socket_id) {return -EADDRINUSE;}
+        }
+    }else{
+        if (device_ports[s->device_id]->ports[s->s_port].connect_socket_id) {return -EADDRINUSE;}
+    }
     return 0;
 }
 
@@ -165,7 +180,9 @@ void *freeSocket_pthread(void *arg){
     pthread_detach(pthread_self());
     sleep(3);
     pthread_mutex_lock(&socket_mutex);
+    int sock_id = s->sock_id;
     free_socket(s->sock_id, 0);
+    free_socket_id(sock_id);
     pthread_mutex_unlock(&socket_mutex);
 }
 
@@ -200,22 +217,30 @@ int TCPAcceptCallback(struct socket_info_t *s){
 }
 
 int TCPAccept(struct socket_info_t *sock){
+    uint32_t s_addr = sock->first->s_addr;
+    uint32_t s_port = sock->first->s_port;
     uint32_t d_addr = sock->first->d_addr;
     uint32_t d_port = sock->first->d_port;
+
+    uint32_t irs = sock->first->irs;
+    uint32_t rcv_nxt = sock->first->rcv_nxt;
+
     delete_waiting_connection(sock, d_addr, d_port);
     int socket_id = alloc_socket_id(sock->sock_id);
     alloc_socket(socket_id, SOCKET_TYPE_DATA, SOCKET_SYN_RECV);
-    insert_data_socket(&(device_ports[sock->device_id]->ports[sock->s_port]), socket_id);
+    int device_id = find_device_by_ip(s_addr);
+    printf("%d\n", s_port);
+    insert_data_socket(&(device_ports[device_id]->ports[s_port]), socket_id);
     struct socket_info_t *s =  &sockets[socket_id - MAX_PORT_NUM];
-    s->device_id = sock->device_id;
-    s->s_addr = sock->s_addr;
-    s->s_port = sock->s_port;
+    s->device_id = device_id;
+    s->s_addr = s_addr;
+    s->s_port = s_port;
     s->d_addr = d_addr;
     s->d_port = d_port;
     alloc_ring_buffer(&(s->input_buffer));
     alloc_ring_buffer(&(s->output_buffer));    
-    s->irs = sock->irs;
-    s->rcv_nxt = sock->rcv_nxt;
+    s->irs = irs;
+    s->rcv_nxt = rcv_nxt;
     s->iss = 1;
     s->snd_una = 1;
     s->snd_nxt = 2;
@@ -353,6 +378,8 @@ int processReadWithoutAck(struct socket_info_t *s){
             read_size = buffer_size;
         }
         if(read_size > 0){
+            s->timeout = 0;
+            s->reset_time = 0;
             s->read_cnt += read_size;
             TCPReadCallback(s);
             unsigned char* buf = malloc(read_size);
@@ -431,6 +458,7 @@ void *TCPTimeout(void *arg){
                 #endif // DEBUG
                 sendTCPControlSegment(s, 0, s->snd_nxt, 1, s->rcv_nxt, 0, 1, get_buffer_free_size(s->input_buffer));
                 shutdownSocket(s, 1);
+                
                 pthread_mutex_unlock(&socket_mutex);
                 break;
             }
@@ -460,16 +488,20 @@ int TCPCallback(const void* buf, int len, uint32_t s_addr, uint32_t d_addr){
     }
     if(device_id == -1) return 0;
     int sock_id = -1;
+    printf("%d %x\n", device_id, device_ip_addr[device_id]);
     int connect_socket_id = device_ports[device_id]->ports[d_port].connect_socket_id;
+    printf("%d\n", connect_socket_id);
     struct data_socket_t *p = device_ports[device_id]->ports[d_port].data_socket_ids;
     while(p != NULL){
+        printf("%p, %d\n", p, p->data_socket_id);
         struct socket_info_t *s =  &sockets[p->data_socket_id - MAX_PORT_NUM];
         if(s->d_addr == s_addr && s->d_port == s_port){
             sock_id = p->data_socket_id;
             break;
         }
+        p = p->next;
     }
-    //printf("%d\n", sock_id);
+    printf("%d\n", sock_id);
     if(sock_id != -1){
         struct socket_info_t *s =  &sockets[sock_id - MAX_PORT_NUM];
         if(hdr->rst){
@@ -577,7 +609,7 @@ int TCPCallback(const void* buf, int len, uint32_t s_addr, uint32_t d_addr){
         if(hdr->syn){
             s->irs = htonl(hdr->seq);
             s->rcv_nxt = htonl(hdr->seq) + 1;
-            insert_waiting_connection(s, s_addr, s_port);
+            insert_waiting_connection(s, d_addr, d_port, s_addr, s_port, htonl(hdr->seq), htonl(hdr->seq) + 1);
             if(s->callback) {
                 s->callback(s);
             }
@@ -678,7 +710,13 @@ int request_routine(){
             int ret = can_bind(s);
             if(ret == 0){
                 s->state = SOCKET_BINDED;
-                device_ports[s->device_id]->ports[s->s_port].connect_socket_id = sock_id;
+                if(s->device_id == 9999){
+                    for(int i = 0; i < numdevice; i ++){
+                        device_ports[i]->ports[s->s_port].connect_socket_id = sock_id;
+                    }
+                }else{
+                    device_ports[s->device_id]->ports[s->s_port].connect_socket_id = sock_id;
+                }
             }
             #ifdef DEBUG
                 printf("pid %d bind socket id %d with ip addr %08x port %hu with ret %d\n", request_pid, sock_id, s_addr, s_port, ret);
@@ -870,7 +908,7 @@ int request_routine(){
                 strcat(response_pipe, socket_pipe_dir);
                 strcat(response_pipe, socket_pipe_response);
                 strcat(response_pipe, ns_name);
-                sprintf(response_pipe + strlen(response_pipe), "%d", s->sock_id);
+                sprintf(response_pipe + strlen(response_pipe), "%d", sock_id);
                 int response_f = open(response_pipe, O_WRONLY);
                 FILE * response_fd = fdopen(response_f, "w");
                 fprintf(response_fd, "%d\n", ret);
@@ -893,11 +931,22 @@ int request_routine(){
                     s->fin_tag = 1;
                     processWriteSend(s);
                 }else{
+                    free_socket_id(sock_id);
                     free_socket(s->sock_id, 0);
-                    TCPFinCallback(s);
+                    response_pipe[0] = '\0';
+                    strcat(response_pipe, socket_pipe_dir);
+                    strcat(response_pipe, socket_pipe_response);
+                    strcat(response_pipe, ns_name);
+                    sprintf(response_pipe + strlen(response_pipe), "%d", sock_id);
+                    int response_f = open(response_pipe, O_WRONLY);
+                    FILE * response_fd = fdopen(response_f, "w");
+                    fprintf(response_fd, "%d\n", 0);
+                    fflush(response_fd);
+                    close(response_f);
                 }
                 pthread_mutex_unlock(&socket_mutex);
             }else{
+                if(!s->valid) free_socket_id(sock_id);
                 response_pipe[0] = '\0';
                 strcat(response_pipe, socket_pipe_dir);
                 strcat(response_pipe, socket_pipe_response);
@@ -905,7 +954,7 @@ int request_routine(){
                 sprintf(response_pipe + strlen(response_pipe), "%d", sock_id);
                 int response_f = open(response_pipe, O_WRONLY);
                 FILE * response_fd = fdopen(response_f, "w");
-                fprintf(response_fd, "%d\n", ret);
+                fprintf(response_fd, "%d\n", (!s->valid) ? 0 : -EINVAL);
                 fflush(response_fd);
                 close(response_f);
                 pthread_mutex_unlock(&socket_mutex);
@@ -931,7 +980,7 @@ int main(int argc, char **argv){
     arp_init();
     route_init();
     IP_init();
-    set_ns_name(argv[1]);
+    set_ns_name(pcap_devices->name);
     tcp_init();
 
     while(1){

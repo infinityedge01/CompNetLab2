@@ -52,8 +52,12 @@ struct device_port_info_t{
 };
 
 struct  waiting_connection_t{
+    uint32_t s_addr;
     uint32_t d_addr;
+    uint16_t s_port;
     uint16_t d_port;
+    uint32_t irs;
+    uint32_t rcv_nxt;
     struct waiting_connection_t *prev;
     struct waiting_connection_t *next;
 };
@@ -95,7 +99,7 @@ int allocSegment(struct segment_t** dst, size_t len, int seq);
 
 int freeSegment(struct segment_t** dst);
 
-int insert_waiting_connection(struct socket_info_t *s, uint32_t d_addr, uint16_t d_port);
+int insert_waiting_connection(struct socket_info_t *s, uint32_t s_addr, uint16_t s_port, uint32_t d_addr, uint16_t d_port, uint32_t irs, uint32_t rcv_nxt);
 int delete_waiting_connection(struct socket_info_t *s, uint32_t d_addr, uint16_t d_port);
 
 int sendTCPSegment(struct segment_t *seg, struct socket_info_t *sock, uint16_t ack, uint32_t ack_seq, uint16_t window);

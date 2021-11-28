@@ -11,7 +11,7 @@
 #include <sys/stat.h>
 char send_buf[1048576 * 20];
 int main(int argc, char **argv){
-    set_ns_name(argv[1]);
+    //set_ns_name(argv[1]);
     //while(1){
         //sleep(1);
         int x = socket(AF_INET, SOCK_STREAM, 0);

@@ -39,6 +39,9 @@ int get_socket_val(int socket_id);
 
 int free_socket_id(int socket_id);
 
+int __wrap_setsockopt (int __fd, int __level, int __optname,
+		       const void *__optval, socklen_t __optlen);
+
 /**
 * @see [POSIX.1-2017:socket](http://pubs.opengroup.org/onlinepubs/
 * 9699919799/functions/socket.html)

@@ -49,6 +49,9 @@ int insert_data_socket(struct port_info_t * port_info, int socket_id){
 }
 
 int delete_data_socket(struct port_info_t * port_info, int socket_id){
+    if(port_info->data_socket_ids == NULL){
+        return -1;
+    }
     if(port_info->data_socket_ids->next == NULL){
         if(port_info->data_socket_ids->data_socket_id != socket_id){
             return -1;
@@ -67,6 +70,9 @@ int delete_data_socket(struct port_info_t * port_info, int socket_id){
     if(p == NULL){
         return -1;
     }
+    if(p == port_info->data_socket_ids){
+        port_info->data_socket_ids = p->next;
+    }
     if(p->prev != NULL){
         p->prev->next = p->next;
     }
@@ -77,12 +83,16 @@ int delete_data_socket(struct port_info_t * port_info, int socket_id){
     return 0;
 }
 
-int insert_waiting_connection(struct socket_info_t *s, uint32_t d_addr, uint16_t d_port){
+int insert_waiting_connection(struct socket_info_t *s, uint32_t s_addr, uint16_t s_port, uint32_t d_addr, uint16_t d_port, uint32_t irs, uint32_t rcv_nxt){
     if(s->first == NULL && s->last == NULL){
         s->first = malloc(sizeof(struct waiting_connection_t));
         s->last = s->first;
+        s->first->s_addr = s_addr;
+        s->first->s_port = s_port;
         s->first->d_addr = d_addr;
         s->first->d_port = d_port;
+        s->first->irs = irs;
+        s->first->rcv_nxt = rcv_nxt;
         s->first->prev = s->first->next = NULL;
         s->waiting_connection_count = 1;
         return 0;
