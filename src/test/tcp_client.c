@@ -10,6 +10,22 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 char send_buf[1048576 * 20];
+
+ssize_t
+writen(int fd, const void* buff, size_t nbytes) {
+  size_t nleft = nbytes;
+  const char *ptr = (const char *) buff;
+  while (nleft > 0) {
+    int nwritten = write(fd, ptr, nleft);
+    if (nwritten == 0 || (nwritten < 0 && errno != EINTR)) {
+      return -1;
+    }
+    nleft -= nwritten;
+    ptr += nwritten;
+  }
+  return nbytes;
+}
+
 int main(int argc, char **argv){
     //set_ns_name(argv[1]);
     //while(1){
@@ -24,7 +40,8 @@ int main(int argc, char **argv){
         FILE *f = fopen("diana.png", "r");
         int len = fread(send_buf, 1, 1048576 * 20, f);
         fclose(f);
-        write(x, send_buf, len);
+        
+        writen(x, send_buf, len);
         close(x);
     //}
     return 0;

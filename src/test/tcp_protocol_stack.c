@@ -237,8 +237,8 @@ int TCPAccept(struct socket_info_t *sock){
     s->s_port = s_port;
     s->d_addr = d_addr;
     s->d_port = d_port;
-    alloc_ring_buffer(&(s->input_buffer));
-    alloc_ring_buffer(&(s->output_buffer));    
+    alloc_ring_buffer(&(s->input_buffer), RING_BUFFER_SIZE);
+    alloc_ring_buffer(&(s->output_buffer), WRITE_RING_BUFFER_SIZE);    
     s->irs = irs;
     s->rcv_nxt = rcv_nxt;
     s->iss = 1;
@@ -280,8 +280,6 @@ int TCPWriteCallback(struct socket_info_t *s){
     int response_f = open(response_pipe, O_WRONLY);
     FILE * response_fd = fdopen(response_f, "w");
     fprintf(response_fd, "%d\n", s->write_cnt);
-    close(s->write_f);
-    s->write_file = NULL;
     fflush(response_fd);
     close(response_f);
 }
@@ -300,17 +298,30 @@ int TCPFailCallback(struct socket_info_t *s, int ret){
     close(response_f);
 }
 
-ssize_t processWrite(struct socket_info_t *s){
-    if(s->write_file != NULL){
-        ssize_t push_len = s->write_len - s->write_cnt;
-        ssize_t free_size = get_buffer_free_size(s->output_buffer);
-        if(free_size < push_len){
-            push_len = free_size;
-        }
+ssize_t canWriteSize(struct socket_info_t *s){
+    ssize_t push_len = s->write_len - s->write_cnt;
+    ssize_t free_size = get_buffer_free_size(s->output_buffer);
+    if(free_size < push_len){
+        push_len = free_size;
+    }
+    return push_len;
+}
+
+ssize_t processWrite(struct socket_info_t *s, ssize_t push_len){
+    if(s->write_flag){
         unsigned char* buf = malloc(push_len);
-        ssize_t read_len = fread(buf, 1, push_len, s->write_file);
+        char write_pipe[256];
+        write_pipe[0] = '\0';
+        strcat(write_pipe, socket_pipe_dir);
+        strcat(write_pipe, socket_pipe_write);
+        strcat(write_pipe, ns_name);
+        sprintf(write_pipe + strlen(write_pipe), "%d", s->sock_id);
+        int rw_f = open(write_pipe, O_RDONLY);
+        FILE *rw_fd = fdopen(rw_f, "r");
+        ssize_t read_len = fread(buf, 1, push_len, rw_fd);
+        close(rw_f);
+        s->write_flag = 0;
         push_ring_buffer(s->output_buffer, buf, push_len);
-        s->write_cnt += push_len;
         return push_len;
     }
     return 0;
@@ -341,11 +352,15 @@ ssize_t processSend(struct socket_info_t *s){
 
 int processWriteSend(struct socket_info_t *s){
     processSend(s);
-    while(processWrite(s) > 0){
-        processSend(s);
-    }
-    if(s->write_file != NULL && s->write_cnt == s->write_len){
-        TCPWriteCallback(s);
+    if(s->write_flag){
+        ssize_t push_len = canWriteSize(s);
+        s->write_cnt += push_len;
+        printf("%ld\n", push_len);
+        if(s->write_cnt != 0){
+            TCPWriteCallback(s);
+            processWrite(s, s->write_cnt);
+            processSend(s);
+        }
     }
     //printf("%ld\n", get_buffer_size(s->output_buffer));
     if(get_buffer_size(s->output_buffer) == 0 && s->fin_tag){
@@ -411,10 +426,9 @@ int shutdownSocket(struct socket_info_t *s, int from_timeout){
         TCPFailCallback(s, -ECONNRESET);
         s->callback = NULL;
     }else if(s->state == SOCKET_ESTABLISHED){
-        if(s->write_file){ 
+        if(s->write_flag){ 
             TCPFailCallback(s, -ECONNRESET);
-            close(s->write_f);
-            s->write_file = NULL;
+            s->write_flag = 0;
         }
         if(s->read_flag){
             TCPFailCallback(s, -ECONNRESET);
@@ -454,7 +468,7 @@ void *TCPTimeout(void *arg){
             #endif // DEBUG
             if(s->reset_time == 3){
                 #ifdef DEBUG
-                printf("socket %d %d %d reset.\n", s->sock_id, s->write_f, s->read_flag);
+                printf("socket %d %d %d reset.\n", s->sock_id, s->write_flag, s->read_flag);
                 #endif // DEBUG
                 sendTCPControlSegment(s, 0, s->snd_nxt, 1, s->rcv_nxt, 0, 1, get_buffer_free_size(s->input_buffer));
                 shutdownSocket(s, 1);
@@ -488,12 +502,12 @@ int TCPCallback(const void* buf, int len, uint32_t s_addr, uint32_t d_addr){
     }
     if(device_id == -1) return 0;
     int sock_id = -1;
-    printf("%d %x\n", device_id, device_ip_addr[device_id]);
+    //printf("%d %x\n", device_id, device_ip_addr[device_id]);
     int connect_socket_id = device_ports[device_id]->ports[d_port].connect_socket_id;
-    printf("%d\n", connect_socket_id);
+    //printf("%d\n", connect_socket_id);
     struct data_socket_t *p = device_ports[device_id]->ports[d_port].data_socket_ids;
     while(p != NULL){
-        printf("%p, %d\n", p, p->data_socket_id);
+        //printf("%p, %d\n", p, p->data_socket_id);
         struct socket_info_t *s =  &sockets[p->data_socket_id - MAX_PORT_NUM];
         if(s->d_addr == s_addr && s->d_port == s_port){
             sock_id = p->data_socket_id;
@@ -501,7 +515,7 @@ int TCPCallback(const void* buf, int len, uint32_t s_addr, uint32_t d_addr){
         }
         p = p->next;
     }
-    printf("%d\n", sock_id);
+    //printf("%d\n", sock_id);
     if(sock_id != -1){
         struct socket_info_t *s =  &sockets[sock_id - MAX_PORT_NUM];
         if(hdr->rst){
@@ -609,6 +623,7 @@ int TCPCallback(const void* buf, int len, uint32_t s_addr, uint32_t d_addr){
         if(hdr->syn){
             s->irs = htonl(hdr->seq);
             s->rcv_nxt = htonl(hdr->seq) + 1;
+            delete_waiting_connection(s, d_addr, d_port);
             insert_waiting_connection(s, d_addr, d_port, s_addr, s_port, htonl(hdr->seq), htonl(hdr->seq) + 1);
             if(s->callback) {
                 s->callback(s);
@@ -784,8 +799,8 @@ int request_routine(){
                 s->d_port = d_port;
                 s->type = SOCKET_TYPE_DATA;
                 s->state = SOCKET_SYN_SENT;
-                alloc_ring_buffer(&(s->input_buffer));
-                alloc_ring_buffer(&(s->output_buffer));    
+                alloc_ring_buffer(&(s->input_buffer), RING_BUFFER_SIZE);
+                alloc_ring_buffer(&(s->output_buffer), WRITE_RING_BUFFER_SIZE);    
                 insert_data_socket(&(device_ports[s->device_id]->ports[s->s_port]), sock_id);
                 s->iss = 1;
                 s->snd_una = 1;
@@ -884,13 +899,7 @@ int request_routine(){
             int sock_id, len;
             fscanf(request_fd, "%d%d", &sock_id, &len);
             close(request_f);
-            rw_pipe[0] = '\0';
-            strcat(rw_pipe, socket_pipe_dir);
-            strcat(rw_pipe, socket_pipe_write);
-            strcat(rw_pipe, ns_name);
-            sprintf(rw_pipe + strlen(rw_pipe), "%d", sock_id);
-            int rw_f = open(rw_pipe, O_RDONLY);
-            FILE *rw_fd = fdopen(rw_f, "r");
+            
             pthread_mutex_lock(&socket_mutex);
             struct socket_info_t *s =  &sockets[sock_id - MAX_PORT_NUM];
             #ifdef DEBUG
@@ -898,10 +907,12 @@ int request_routine(){
             #endif // DEBUG
             int ret = can_write(s);
             if(ret == 0){
-                s->write_f = rw_f;
-                s->write_file = rw_fd;
+                s->write_flag = 1;
                 s->write_cnt = 0;
                 s->write_len = len;
+                if(get_buffer_free_size(s->output_buffer)){
+                    processWriteSend(s);
+                }
                 pthread_mutex_unlock(&socket_mutex);
             }else{
                 response_pipe[0] = '\0';
@@ -954,7 +965,7 @@ int request_routine(){
                 sprintf(response_pipe + strlen(response_pipe), "%d", sock_id);
                 int response_f = open(response_pipe, O_WRONLY);
                 FILE * response_fd = fdopen(response_f, "w");
-                fprintf(response_fd, "%d\n", (!s->valid) ? 0 : -EINVAL);
+                fprintf(response_fd, "%d\n", 0);
                 fflush(response_fd);
                 close(response_f);
                 pthread_mutex_unlock(&socket_mutex);

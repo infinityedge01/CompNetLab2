@@ -81,8 +81,7 @@ struct socket_info_t{
     struct waiting_connection_t *last;
     int waiting_connection_count;
     int backlog;
-    FILE *write_file;
-    int write_f, read_flag;
+    int write_flag, read_flag;
     int read_cnt, read_len, write_cnt, write_len, peer_window_size;
     pthread_t resend_pthread, fin_pthread;
     uint32_t timeout, reset_time;

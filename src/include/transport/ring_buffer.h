@@ -8,14 +8,17 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define RING_BUFFER_SIZE 16384
+#define RING_BUFFER_SIZE 32768
+#define WRITE_RING_BUFFER_SIZE 1048576
+
 struct ring_buffer_t{
     unsigned char *buf;
+    ssize_t size;
     ssize_t st;
     ssize_t ed;
 };
 
-int alloc_ring_buffer(struct ring_buffer_t **dst);
+int alloc_ring_buffer(struct ring_buffer_t **dst, ssize_t size);
 
 int free_ring_buffer(struct ring_buffer_t **dst);
 

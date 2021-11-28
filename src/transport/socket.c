@@ -400,15 +400,17 @@ ssize_t __wrap_write(int fildes, const void *buf, size_t nbyte){
         #endif // SOCKDEBUG
         initialize_response_pipe(get_socket_val(fildes));
         write_request_pipe(request_buf);
-        int ret = write_write_pipe(get_socket_val(fildes), (char *)buf, nbyte);
-        if(ret < 0){
-            errno = -ret;
-            return ret;
-        }
         ret = read_response_pipe();
         if(ret < 0){
             errno = -ret;
             return ret;
+        }
+        if(ret > 0){
+            int ret2 = write_write_pipe(get_socket_val(fildes), (char *)buf, ret);
+            if(ret2 < 0){
+                errno = -ret2;
+                return ret2;
+            }
         }
         #ifdef SOCKDEBUG
             printf("process %d write socket id %d local id %d nbyte %ld with ret %d\n", getpid(),   get_socket_val(fildes), fildes, nbyte, ret);
