@@ -658,7 +658,6 @@ Device ID: 0
 
 ### Checkpoint 6 (CP6).
 
-### Checkpoint 5 (CP5).
 
 I used `checkpoint/CP06/vnet.txt` to build the vNet.The network has the following topology:
 
@@ -718,3 +717,177 @@ And we can see `ns4` successfully received the packet with correct TTL:
 
 
 ![image-20211022212855411](checkpoints/CP06/sc01.png)
+
+## 3.4 Transport-layer: TCP Protocol
+
+### Programming Task 4 (PT4).
+
+Finished. (`__wrap_getaddrinfo` is implemented by call built-in `getaddrinfo` directly)
+
+### Writing Task 3 (WT3).
+
+- I use a `struct socket_info_t` to save all the information about a socket. The `struct socket_info_t` records each socket's state, type, addr, port, etc. 
+- When user program call `socket`, the protocol stack alloc a new empty `CLOSE` socket. When user program call `bind`, the protocol stack set some information of the socket and change the socket state to `BINDED`. 
+- When user program call `listen`, the protocol stack set some information of the socket and change the socket state to `LISTEN`. 
+- When user program call `connect`, the protocol stack set some information of the socket, change the socket state to `SYN_SENT`, and send a `SYN` segment to the server. 
+- When the server receives a `SYN` segment, the corresponding `LISTEN` socket add the connection to a waiting list. - When user program call `accept`, if there is a connection in a waiting list, the protocol stack alloc a new data socket, change the socket state to `SYN_RECV`, and send a `SYNACK` segment to the client. the protocol stack will wait a new `SYN` segment of the accepting socket if the waiting list is empty.
+- When the client receives a `SYNACK` segment of the connecting socket, the protocol stack change the socket state to `ESTABLISHED`, and send a `ACK` segment to the server. 
+- When the client receives a `ACK` segment of a `SYN_RECV` socket, the protocol stack change the socket state to `ESTABLISHED`.
+- When user program call `read`, the protocol stack will wait for the input ring buffer and send as most data as it can read data from the input buffer to the user program. 
+- When user program call `write`, the protocol stack will wait for the freespace of the output ring buffer and read as most data as it can write data to the output buffer from the user program, then write the data into the output buffer.
+- When user program call `close`, the protocol stack will set some information of the socket, change the socket state to `FIN_WAIT1`, send a `FIN` segment to the remote.
+- When the client/server receives a `FIN` segment of a socket, the protocol stack change the socket state to `CLOSE_WAIT`, send a `FIN ACK` segment to the remote, to wait for all data to be sent.
+- When the client/server sent all of the data of a  `CLOSE_WAIT` socket, the protocol stack change the socket state to `LAST_ACK` and send a `FIN` segment to the remote.
+- When the client/server receives a `ACK` segment of a `FIN_WAIT1` socket, the protocol stack change the socket state to `FIN_WAIT2`, and write data of the socket is no longer allowed.
+- When the client/server receives a `FIN` segment of a `FIN_WAIT2` socket, the protocol stack change the socket state to `TIME_WAIT`, send a `FIN ACK` segment to the remote, wait a long time for all packets to be die out, the close the socket.
+- When the client/server receives a `ACK` segment of a `LAST_ACK` socket, the protocol stack close the socket.
+
+### Checkpoint 7 (CP7).
+
+I used `examples/example.txt` to build the vNet.The network has the following topology:
+
+![image-20211022212855411](checkpoints/CP04/exp.png)
+
+`veth1-2, veth2-1` has ip address `10.100.1.0/24`, `veth2-3, veth3-2` has ip address `10.100.2.0/24`, `veth3-4, veth4-3` has ip address `10.100.3.0/24`, `veth3-0` has ip address `10.100.4.0/24`, 
+I ran `./router` on `ns2, ns3` for IP layer routing/forwarding and `./tcp_protocol_stack` `ns1, ns4` to support socket API.
+
+I ran `./tcp_server` on `ns1` and `./tcp_client` on `ns4`. The `./tcp_client` send a high resolution `diana.png` to the `./tcp_server` and `./tcp_server` download it.
+
+![diana](checkpoints/CP07/diana.png)
+
+The packet captured by wireshark in `ns1` is saved at `checkpoints/CP07/cp07.pcapng`
+
+I choose the `#100` packet. The TCP header is here:
+
+```
+0000   c3 50 04 63 00 00 e6 a9 00 00 00 02 50 10 7f ff
+0010   85 56 00 00
+```
+
+- The first `2` byte is `c3 50`, means the source port is `50000`.
+- The `3rd-4th` byte is `04 63`, means the destination port is `1123`.
+- The `5-8th` byte is `00 00 e6 a9`, means the raw sequence number is `59049`.
+
+- The `9-12th` byte is `00 00 00 02`, means the raw ack number is `2`.
+
+- The `13-14th` byte is `50 10`. The first 4 bit is `0101`, means the TCP header length is `5 * 4 = 20`. The next 12 bit is flag bits, only the ACK bit is `1`. means it is an ACK segment.
+
+
+```
+000. .... .... = Reserved: Not set
+...0 .... .... = Nonce: Not set
+.... 0... .... = Congestion Window Reduced (CWR): Not set
+.... .0.. .... = ECN-Echo: Not set
+.... ..0. .... = Urgent: Not set
+.... ...1 .... = Acknowledgment: Set
+.... .... 0... = Push: Not set
+.... .... .0.. = Reset: Not set
+.... .... ..0. = Syn: Not set
+.... .... ...0 = Fin: Not set
+```
+
+- The `15-16th` byte is `7f ff`. means the window size of sender is `32767`.
+
+- The `17-18th` byte is `85 56`. It's the TCP checksum.
+
+- The `19-20th` byte is `00 00`. It's the urgent pointer(not implemented).
+
+
+### Checkpoint 8 (CP8).
+
+I used the same setting as the CP7. The only difference is I set a `2%` packet with loss rate at line `647-649`  in `tcp_protocol_stack.c`. (I don't know how to use `netem` in `veth` generated by `vnetUtils`, so I manually set the loss rate in my protocol stack). The TCP client send data slowly, but all data is correctly delivered. The packet captured by wireshark in `ns1` is saved at `checkpoints/CP08/cp08.pcapng`.
+
+### Checkpoint 9 (CP9).
+
+I build the `echo_server` and the `echo_client` in `/src/checkpoint`. The source code is without any modification. You can just run `make clean & make` in `/src/checkpoint` to build the program. As before, I also need to run `./router` on `ns2, ns3` for IP layer routing/forwarding and `./tcp_protocol_stack` `ns1, ns4` to support socket API.
+
+The output of `echo_server` is here:
+```
+new connection
+6 12 13 14 63 68 70 72 74 76 78 80 82 84 86 87 88 89 1549 4184 5644 8279 9739 12374 13834 15000 all: 15000
+new connection
+6 12 13 14 63 68 70 72 74 76 78 80 82 84 86 87 88 89 4184 5644 8279 9739 12374 13834 15000 all: 15000
+new connection
+6 12 13 14 63 68 70 72 74 76 78 80 82 84 86 87 88 89 1549 3009 4184 5644 8279 9739 12374 13834 15000 all: 15000
+```
+The output of `echo_client` is here:
+```
+loop #1 ok.
+loop #2 ok.
+loop #3 ok.
+```
+
+The packet captured by wireshark in `ns1` is saved at `checkpoints/CP09/cp09.pcapng`.
+
+### Checkpoint 10 (CP10).
+
+I build the `perf_server` and the `perf_client` in `/src/checkpoint`. The source code is without any modification. You can just run `make clean & make` in `/src/checkpoint` to build the program. As before, I also need to run `./router` on `ns2, ns3` for IP layer routing/forwarding and `./tcp_protocol_stack` `ns1, ns4` to support socket API.
+
+The output of `perf_server` is here:
+```
+new connection
+all: 1460000
+str_echo: read error
+```
+The output of `perf_client` is here:
+```
+sending ...
+receiving ...
+637.30 KB/s
+sending ...
+receiving ...
+694.89 KB/s
+sending ...
+receiving ...
+743.44 KB/s
+sending ...
+receiving ...
+608.85 KB/s
+sending ...
+receiving ...
+562.99 KB/s
+sending ...
+receiving ...
+504.13 KB/s
+sending ...
+receiving ...
+601.78 KB/s
+sending ...
+receiving ...
+521.17 KB/s
+sending ...
+receiving ...
+561.89 KB/s
+sending ...
+receiving ...
+562.34 KB/s
+```
+
+## 3.5 Bonus: Test/Evaluation
+
+Not implemented.
+
+## 3.6 Challenge
+
+### Challenge 1 (CL1).
+
+I used the same setting as the CP7. I run 1 `./tcp_server` on `ns1` and then run two `./tcp_client` simultaneously. The `./tcp_server` will accept one connection first, when the `./tcp_server` finished the connection, it will accept the next connection.
+
+The output of the `./tcp_server` is in `checkpoints/CL01/trace.txt`.
+The packet captured by wireshark in `ns1` is saved at `checkpoints/CL01/cl01.pcapng`.
+
+### Challenge 2 (CL2).
+
+To test the fragmentation and reassembly functions, you can modify the IP_FRAG_SIZE in `src/include/network/ip.h` to a smaller number. I modified it to 800. After modify it, you should rebuild all the libraries and user programs.
+
+The rest setting is same as I used in the CP7. You can see the protocol stack ran successfully.
+
+The packet captured by wireshark in `ns1` is saved at `checkpoints/CL02/cl02.pcapng`.
+
+### Challenge 2 (CL4).
+
+To test the TCP flow control functions, I modified the `./tcp_server` to read at most `16` byte each time, the the speed of receiving became extremely slow.
+
+The rest setting is same as I used in the CP7. The server used near 1 minute to receive the `1MB` photo. But the data delivered successfully.
+
+The packet captured by wireshark in `ns1` is saved at `checkpoints/CL04/cl04.pcapng`.
