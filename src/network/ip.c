@@ -16,6 +16,10 @@ uint16_t cur_packet_id = 0;
 IPPacketReceiveCallback ip_callback;
 pthread_mutex_t ip_callback_mutex, cur_packet_id_mutex;
 
+unsigned char ip_fragment_buf[MAX_DEVICE][1600];
+
+int ip_fragment_len[MAX_DEVICE];
+
 int IPEthCallback(const void* buf, int len, int id);
  
 int IP_init(){
@@ -42,6 +46,7 @@ int proto, const void *buf, int len){
     cur_packet_id ++;
     hdr->id = htons(cur_packet_id);
     pthread_mutex_unlock(&cur_packet_id_mutex);
+    //hdr->frag_off = htons(IP_DF);
     hdr->frag_off = 0;
     hdr->ttl = 64;
     hdr->protocol = proto;
@@ -70,9 +75,30 @@ int IPEthCallback(const void* buf, int len, int id) {
     }
     if(device_id != -1){
         pthread_mutex_lock(&ip_callback_mutex);
-        if(ip_callback == NULL) ret = 0;
-        else{
-            ret = ip_callback((void *)data, htons(data->tot_len));
+        int valid_flag = 1;
+        if((htons(data->frag_off) & IP_OFFMASK) == 0){
+            memcpy(ip_fragment_buf[device_id], ((void *)data) + ((size_t)(data->ihl) << 2), htons(data->tot_len) - ((size_t)(data->ihl) << 2));
+            ip_fragment_len[device_id] = htons(data->tot_len) - ((size_t)(data->ihl) << 2);
+        }else{
+            if((htons(data->frag_off) & IP_OFFMASK) * 8 != ip_fragment_len[device_id]){
+                ip_fragment_len[device_id] = 0;
+                valid_flag = 0;
+            }else{
+                memcpy(ip_fragment_buf[device_id] + ip_fragment_len[device_id], ((void *)data) + ((size_t)(data->ihl) << 2), htons(data->tot_len) - ((size_t)(data->ihl) << 2));
+                ip_fragment_len[device_id] += htons(data->tot_len) - ((size_t)(data->ihl) << 2);
+            }
+        }
+        if(!(htons(data->frag_off) & IP_MF) && valid_flag){
+            if(ip_callback == NULL) ret = 0;
+            else{
+                unsigned char * ip_data = (unsigned char *)malloc(((size_t)(data->ihl) << 2) + ip_fragment_len[device_id]);
+                memcpy(ip_data, data, ((size_t)(data->ihl) << 2));
+                memcpy(ip_data + ((size_t)(data->ihl) << 2), ip_fragment_buf[device_id], ip_fragment_len[device_id]);
+                struct iphdr *ndata = (struct iphdr *)ip_data; 
+                ndata->tot_len = htons(((size_t)(data->ihl) << 2) + ip_fragment_len[device_id]);
+                ret = ip_callback((void *)ndata, htons(ndata->tot_len));
+                free(ip_data);
+            }
         }
         pthread_mutex_unlock(&ip_callback_mutex);
         return ret;

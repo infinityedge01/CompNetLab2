@@ -12,11 +12,8 @@
 #include <string.h>
 #include <stdio.h>
 
-
 int forwardPacket(const void* send_buf, int len){
     struct iphdr *hdr = (struct iphdr *)send_buf;
-    hdr->check = 0;
-    hdr->check = checksum((uint16_t *)hdr, ((size_t)hdr->ihl) << 2);
     unsigned char nextHopMAC[6];
     int device_id = -1;
     int ret = routing_query(hdr->daddr, nextHopMAC, &device_id);
@@ -48,7 +45,32 @@ int forwardPacket(const void* send_buf, int len){
             }
         }
     }
-    sendFrame(send_buf, len, ETH_P_IP, nextHopMAC, device_id);
+    if(htons(hdr->frag_off) & IP_DF || htons(hdr->tot_len) - ((size_t)(hdr->ihl) << 2) <= IP_FRAG_SIZE){
+        hdr->check = 0;
+        hdr->check = checksum((uint16_t *)hdr, ((size_t)(size_t)(hdr->ihl)) << 2);
+        sendFrame(send_buf, len, ETH_P_IP, nextHopMAC, device_id);
+    }else{
+        for(int i = 0; i < htons(hdr->tot_len) - ((size_t)(hdr->ihl) << 2); i += IP_FRAG_SIZE){
+            int flen = IP_FRAG_SIZE;
+            if(htons(hdr->tot_len) - ((size_t)(hdr->ihl) << 2) - i < flen){
+                flen = htons(hdr->tot_len) - ((size_t)(hdr->ihl) << 2) - i;
+            }
+            unsigned char * ip_data = (unsigned char *)malloc(((size_t)(hdr->ihl) << 2) + flen);
+            memcpy(ip_data, hdr, ((size_t)(hdr->ihl) << 2));
+            memcpy(ip_data + ((size_t)(hdr->ihl) << 2), ((void *)hdr) + ((size_t)(hdr->ihl) << 2) + i, flen);
+            struct iphdr *ndata = (struct iphdr *)ip_data; 
+            ndata->tot_len = htons(flen + ((size_t)(hdr->ihl) << 2));
+            if(i + IP_FRAG_SIZE >= htons(hdr->tot_len) - ((size_t)(hdr->ihl) << 2)){
+                ndata->frag_off = htons(htons(ndata->frag_off) + i / 8);
+            }else{
+                ndata->frag_off = htons((htons(ndata->frag_off) + i / 8) | IP_MF);
+            }
+            ndata->check = 0;
+            ndata->check = checksum((uint16_t *)ndata, ((size_t)ndata->ihl) << 2);
+            sendFrame(ip_data, flen + ((size_t)(hdr->ihl) << 2), ETH_P_IP, nextHopMAC, device_id);
+            free(ip_data);
+        }
+    }
     #ifdef DEBUG
         printf("Forward IP Packet Form Src ");
         print_ip_address(&(hdr->saddr));

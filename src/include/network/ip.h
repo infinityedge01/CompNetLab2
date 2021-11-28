@@ -7,6 +7,8 @@ in an Ethernet II frame.
 #define NETWORK_IP_H
 #include <netinet/ip.h>
 
+#define IP_FRAG_SIZE 1500
+
 int IP_init();
 /**
 * @brief Send an IP packet to specified host.
