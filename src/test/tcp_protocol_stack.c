@@ -12,6 +12,7 @@
 #include <transport/tcp.h>
 #include <transport/ring_buffer.h>
 
+#include <time.h>
 #include <stdio.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -225,11 +226,11 @@ int TCPAccept(struct socket_info_t *sock){
     uint32_t irs = sock->first->irs;
     uint32_t rcv_nxt = sock->first->rcv_nxt;
 
-    delete_waiting_connection(sock, d_addr, d_port);
+    while(delete_waiting_connection(sock, d_addr, d_port) != -1);
     int socket_id = alloc_socket_id(sock->sock_id);
     alloc_socket(socket_id, SOCKET_TYPE_DATA, SOCKET_SYN_RECV);
     int device_id = find_device_by_ip(s_addr);
-    printf("%d\n", s_port);
+    printf("accept %d\n", s_port);
     insert_data_socket(&(device_ports[device_id]->ports[s_port]), socket_id);
     struct socket_info_t *s =  &sockets[socket_id - MAX_PORT_NUM];
     s->device_id = device_id;
@@ -623,7 +624,7 @@ int TCPCallback(const void* buf, int len, uint32_t s_addr, uint32_t d_addr){
         if(hdr->syn){
             s->irs = htonl(hdr->seq);
             s->rcv_nxt = htonl(hdr->seq) + 1;
-            delete_waiting_connection(s, d_addr, d_port);
+            while(delete_waiting_connection(s, d_addr, d_port) != -1);
             insert_waiting_connection(s, d_addr, d_port, s_addr, s_port, htonl(hdr->seq), htonl(hdr->seq) + 1);
             if(s->callback) {
                 s->callback(s);
@@ -643,6 +644,9 @@ int IPCallback(const void* buf, int len){
     printf(", TTL=%d, Payload:\n%s\n", hdr->ttl, (const char *)ip_payload);
     #endif // DEBUG
     if(hdr->protocol == IPPROTO_TCP){
+//        if(rand() % 100 <= 1){ // random drop tcp packet
+//            return 0; 
+//        }
         pthread_mutex_lock(&socket_mutex);
         TCPCallback(ip_payload, (int)(htons(hdr->tot_len) - (((size_t)hdr->ihl) << 2)), hdr->saddr, hdr->daddr);
         pthread_mutex_unlock(&socket_mutex);
@@ -976,6 +980,7 @@ int request_routine(){
 }
 int main(int argc, char **argv){
     initDevice();
+    srand(time(NULL));
     for (pcap_if_t *p = pcap_devices; p; p = p->next) {
         if(strncmp("veth", p->name, 4) == 0) {
             device_id[numdevice] = addDevice(p->name);

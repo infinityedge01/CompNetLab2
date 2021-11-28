@@ -26,11 +26,14 @@ int main(int argc, char **argv){
         int socket_id;
         struct sockaddr address;
         socklen_t address_len;
+        int cnt;
         while(1){
             printf("Listening...\n");
             socket_id = accept(x, &address, &address_len);
             printf("%d\n", socket_id);
-            FILE *f = fopen("download.png", "w");
+            char filename[256];
+            sprintf(filename, "download_%d.png", cnt);
+            FILE *f = fopen(filename, "w");
             int tot_write = 0;
             while(1){
                 int ret = read(socket_id, buf, 1048576);
@@ -43,6 +46,7 @@ int main(int argc, char **argv){
                 printf("write %d bytes\n", tot_write);
             }
             fclose(f);
+            cnt ++;
         }
     //}
     return 0;

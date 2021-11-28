@@ -7,7 +7,7 @@ in an Ethernet II frame.
 #define NETWORK_IP_H
 #include <netinet/ip.h>
 
-#define IP_FRAG_SIZE 1500
+#define IP_FRAG_SIZE 1500 // modify it to test fragmentation
 
 int IP_init();
 /**
