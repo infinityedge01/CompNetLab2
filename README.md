@@ -1,7 +1,5 @@
 # CompNet Lab2
 
-1900013039 邓朝萌
-
 ## Build
 
 Build Libraries:
